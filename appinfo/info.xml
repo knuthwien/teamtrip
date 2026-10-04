@@ -1,0 +1,52 @@
+<?xml version="1.0"?>
+<info xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:noNamespaceSchemaLocation="https://apps.nextcloud.com/schema/apps/info.xsd">
+    <id>teamtrip</id>
+    <name>TeamTrip</name>
+    <summary>Synchronize and share TeamTrip journeys.</summary>
+    <summary lang="de">TeamTrip-Reisen synchronisieren und teilen.</summary>
+    <summary lang="es">Sincroniza y comparte viajes de TeamTrip.</summary>
+    <summary lang="fr">Synchronisez et partagez des voyages TeamTrip.</summary>
+    <summary lang="it">Sincronizza e condividi i viaggi di TeamTrip.</summary>
+    <description><![CDATA[
+TeamTrip provides a Nextcloud-backed synchronization and sharing service for the TeamTrip iOS app.
+It stores versioned trip snapshots, supports read/edit sharing between Nextcloud users and includes a compact web view for inspecting the current server state.
+    ]]></description>
+    <description lang="de"><![CDATA[
+TeamTrip stellt einen Nextcloud-basierten Synchronisierungs- und Freigabedienst für die TeamTrip-iOS-App bereit.
+Versionierte Reisestände, Lese- und Bearbeitungsfreigaben sowie eine kompakte Webansicht ermöglichen die Kontrolle des aktuellen Serverstands.
+    ]]></description>
+    <description lang="es"><![CDATA[
+TeamTrip ofrece un servicio de sincronización y uso compartido basado en Nextcloud para la app TeamTrip de iOS.
+Guarda versiones de los viajes, admite permisos de lectura y edición e incluye una vista web compacta para consultar el estado actual del servidor.
+    ]]></description>
+    <description lang="fr"><![CDATA[
+TeamTrip fournit un service de synchronisation et de partage basé sur Nextcloud pour l’application iOS TeamTrip.
+Il conserve des versions des voyages, prend en charge les droits de lecture et de modification et propose une vue web compacte de l’état actuel du serveur.
+    ]]></description>
+    <description lang="it"><![CDATA[
+TeamTrip offre un servizio di sincronizzazione e condivisione basato su Nextcloud per l’app iOS TeamTrip.
+Conserva versioni dei viaggi, supporta permessi di lettura e modifica e include una vista web compatta per controllare lo stato attuale del server.
+    ]]></description>
+    <version>0.1.8</version>
+    <licence>AGPL-3.0-or-later</licence>
+    <author>TeamTrip</author>
+    <website>https://github.com/knuthwien/teamtrip</website>
+    <bugs>https://github.com/knuthwien/teamtrip/issues</bugs>
+    <repository>https://github.com/knuthwien/teamtrip</repository>
+    <namespace>TeamTrip</namespace>
+    <category>organization</category>
+    <dependencies>
+        <nextcloud min-version="31" max-version="35"/>
+    </dependencies>
+    <navigations>
+        <navigation>
+            <id>teamtrip</id>
+            <name>TeamTrip</name>
+            <route>teamtrip.page.index</route>
+            <order>55</order>
+            <icon>teamtrip-menu-v5.svg</icon>
+            <type>link</type>
+        </navigation>
+    </navigations>
+</info>

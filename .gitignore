@@ -1,0 +1,16 @@
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo
+*.log
+/vendor/
+/node_modules/
+/build/
+/dist/
+*.key
+*.pem
+*.p12
+*.pfx
+.env
+.env.*

@@ -1,0 +1,364 @@
+#content {
+    position: relative;
+    height: calc(100vh - var(--header-height, 50px)) !important;
+    max-height: calc(100vh - var(--header-height, 50px)) !important;
+    min-height: 0 !important;
+    overflow-x: hidden;
+    overflow-y: auto !important;
+    overscroll-behavior-y: contain;
+    -webkit-overflow-scrolling: touch;
+}
+
+.app-teamtrip #app-content,
+.app-teamtrip #app-content-vue,
+#app-content:has(#teamtrip-app),
+#app-content-vue:has(#teamtrip-app) {
+    height: auto !important;
+    min-height: 100%;
+    overflow: visible !important;
+}
+
+.teamtrip-wrap {
+    width: min(calc(100% - 32px), 1120px);
+    box-sizing: border-box;
+    margin: 0 auto;
+    min-height: 100%;
+    padding: clamp(24px, 4vw, 48px) 0 144px;
+    color: var(--color-main-text);
+    font-size: 15px;
+    line-height: 1.45;
+}
+
+.teamtrip-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 20px;
+    margin: 0 0 24px;
+}
+
+.teamtrip-header h1 {
+    margin: 0 0 6px;
+    font-size: clamp(28px, 4vw, 38px);
+    line-height: 1.15;
+    letter-spacing: -.02em;
+}
+
+.teamtrip-header p,
+.teamtrip-table small,
+.teamtrip-muted {
+    margin: 0;
+    color: var(--color-main-text);
+}
+
+.teamtrip-badge {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    min-height: 30px;
+    box-sizing: border-box;
+    border: 1px solid var(--color-border);
+    border-radius: 999px;
+    padding: 5px 11px;
+    background: var(--color-background-dark);
+    color: var(--color-main-text);
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.2;
+}
+
+.teamtrip-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr));
+    gap: 18px;
+}
+
+.teamtrip-card,
+.teamtrip-empty,
+.teamtrip-panel,
+.teamtrip-stats > div {
+    box-sizing: border-box;
+    border: 1px solid var(--color-border);
+    background: var(--color-main-background);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, .06);
+}
+
+.teamtrip-card {
+    display: block;
+    min-width: 0;
+    border-radius: 18px;
+    padding: clamp(18px, 3vw, 24px);
+    color: var(--color-main-text) !important;
+    text-decoration: none !important;
+    transition: border-color .15s ease, transform .15s ease, box-shadow .15s ease;
+}
+
+.teamtrip-card:hover,
+.teamtrip-card:focus-visible {
+    border-color: var(--color-primary-element);
+    box-shadow: 0 8px 28px rgba(0, 0, 0, .10);
+    transform: translateY(-1px);
+}
+
+.teamtrip-card-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 14px;
+    margin-bottom: 18px;
+}
+
+.teamtrip-card h2 {
+    min-width: 0;
+    margin: 0;
+    font-size: clamp(20px, 2.5vw, 24px);
+    line-height: 1.25;
+    overflow-wrap: anywhere;
+}
+
+.teamtrip-meta {
+    display: grid;
+    gap: 0;
+}
+
+.teamtrip-meta-row {
+    display: grid;
+    grid-template-columns: minmax(195px, 42%) minmax(0, 1fr);
+    column-gap: 18px;
+    align-items: start;
+    padding: 9px 0;
+    border-top: 1px solid var(--color-border);
+}
+
+.teamtrip-meta-row span {
+    min-width: 0;
+    font-weight: 600;
+    overflow-wrap: anywhere;
+    word-break: normal;
+    hyphens: auto;
+}
+
+.teamtrip-meta-row strong {
+    min-width: 0;
+    font-weight: 500;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
+.teamtrip-empty,
+.teamtrip-panel {
+    border-radius: 18px;
+    padding: clamp(18px, 3vw, 26px);
+}
+
+.teamtrip-empty {
+    max-width: 760px;
+}
+
+.teamtrip-empty h2,
+.teamtrip-panel h2 {
+    margin: 0 0 12px;
+    font-size: clamp(22px, 3vw, 28px);
+    line-height: 1.2;
+}
+
+.teamtrip-back {
+    display: inline-flex;
+    margin-bottom: 20px;
+    color: var(--color-main-text) !important;
+    font-weight: 600;
+}
+
+.teamtrip-detail-header {
+    margin-bottom: 20px;
+}
+
+.teamtrip-stats {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+    margin: 0 0 18px;
+}
+
+.teamtrip-stats > div {
+    min-width: 0;
+    border-radius: 16px;
+    padding: 16px;
+}
+
+.teamtrip-stats strong {
+    display: block;
+    margin-bottom: 3px;
+    font-size: clamp(22px, 3vw, 28px);
+    line-height: 1.1;
+}
+
+.teamtrip-stats span {
+    display: block;
+    color: var(--color-main-text);
+    font-size: 13px;
+    font-weight: 600;
+    overflow-wrap: anywhere;
+}
+
+.teamtrip-panel {
+    margin-bottom: 18px;
+}
+
+.teamtrip-table-wrap {
+    max-width: 100%;
+    overflow-x: auto;
+}
+
+.teamtrip-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: auto;
+}
+
+.teamtrip-table th,
+.teamtrip-table td {
+    padding: 11px 10px;
+    border-bottom: 1px solid var(--color-border);
+    text-align: left;
+    vertical-align: top;
+    overflow-wrap: anywhere;
+}
+
+.teamtrip-table th:nth-child(1) { width: 18%; }
+.teamtrip-table th:nth-child(2) { width: 16%; }
+.teamtrip-table th:nth-child(3) { width: 31%; }
+.teamtrip-table th:nth-child(4) { width: 9%; }
+.teamtrip-table th:nth-child(5) { width: 26%; }
+
+.teamtrip-table th {
+    color: var(--color-main-text);
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.teamtrip-table code,
+.teamtrip-clean-list code,
+.teamtrip-tech code {
+    font-size: 11px;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
+.teamtrip-uuid {
+    max-width: 220px;
+}
+
+.teamtrip-two-col {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px;
+}
+
+.teamtrip-clean-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.teamtrip-clean-list li {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.teamtrip-clean-list li > :last-child {
+    min-width: 0;
+    text-align: right;
+    overflow-wrap: anywhere;
+}
+
+.teamtrip-tech summary {
+    cursor: pointer;
+    font-weight: 700;
+}
+
+.teamtrip-tech[open] {
+    overflow: visible;
+}
+
+.teamtrip-tech dl {
+    display: grid;
+    gap: 0;
+    margin: 16px 0 0;
+}
+
+.teamtrip-tech dl > div {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 4px;
+    padding: 12px 0;
+    border-top: 1px solid var(--color-border);
+}
+
+.teamtrip-tech dt {
+    font-weight: 700;
+}
+
+.teamtrip-tech dd {
+    min-width: 0;
+    margin: 0;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
+.teamtrip-tech dd code {
+    display: block;
+    max-width: 100%;
+}
+
+@media (max-width: 720px) {
+    .teamtrip-wrap {
+        width: min(calc(100% - 24px), 1120px);
+        padding-top: 22px;
+    }
+
+    .teamtrip-header {
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .teamtrip-stats {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .teamtrip-two-col {
+        grid-template-columns: 1fr;
+        gap: 0;
+    }
+
+    .teamtrip-meta-row,
+    .teamtrip-tech dl > div {
+        grid-template-columns: 1fr;
+        gap: 3px;
+    }
+
+    .teamtrip-table {
+        min-width: 700px;
+    }
+
+    .teamtrip-clean-list li {
+        grid-template-columns: 1fr;
+        gap: 4px;
+    }
+
+    .teamtrip-clean-list li > :last-child {
+        text-align: left;
+    }
+}
+
+@media (min-width: 721px) and (max-width: 980px) {
+    .teamtrip-grid {
+        grid-template-columns: 1fr;
+    }
+}
