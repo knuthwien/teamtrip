@@ -178,6 +178,102 @@
     margin-bottom: 20px;
 }
 
+.teamtrip-detail-nav {
+    display: flex;
+    gap: 8px;
+    margin: 0 0 18px;
+    padding: 2px 0 8px;
+    overflow-x: auto;
+    scrollbar-width: thin;
+}
+
+.teamtrip-detail-nav a {
+    display: inline-flex;
+    min-height: 38px;
+    box-sizing: border-box;
+    align-items: center;
+    flex: 0 0 auto;
+    border: 1px solid var(--color-border);
+    border-radius: 999px;
+    padding: 0 13px;
+    background: var(--color-main-background);
+    color: var(--color-main-text) !important;
+    font-size: 13px;
+    font-weight: 650;
+    text-decoration: none !important;
+}
+
+.teamtrip-detail-nav a:hover,
+.teamtrip-detail-nav a:focus-visible {
+    border-color: var(--color-primary-element);
+    color: var(--color-primary-element) !important;
+}
+
+.teamtrip-anchor-section,
+.teamtrip-overview-panel {
+    scroll-margin-top: calc(var(--header-height, 50px) + 16px);
+}
+
+.teamtrip-overview-panel {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(180px, .38fr);
+    gap: clamp(18px, 4vw, 42px);
+    align-items: stretch;
+}
+
+.teamtrip-detail-list {
+    display: grid;
+    gap: 0;
+    margin: 0;
+}
+
+.teamtrip-detail-list > div {
+    display: grid;
+    grid-template-columns: minmax(120px, .35fr) minmax(0, 1fr);
+    gap: 14px;
+    padding: 10px 0;
+    border-top: 1px solid var(--color-border);
+}
+
+.teamtrip-detail-list dt {
+    color: var(--color-text-maxcontrast);
+    font-weight: 650;
+}
+
+.teamtrip-detail-list dd {
+    min-width: 0;
+    margin: 0;
+    overflow-wrap: anywhere;
+}
+
+.teamtrip-cost-summary {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    justify-content: center;
+    border-radius: 14px;
+    padding: 18px;
+    background: var(--color-background-dark);
+}
+
+.teamtrip-cost-summary span {
+    margin-bottom: 7px;
+    color: var(--color-text-maxcontrast);
+    font-size: 13px;
+    font-weight: 650;
+}
+
+.teamtrip-cost-summary strong {
+    display: block;
+    font-size: clamp(22px, 3vw, 30px);
+    line-height: 1.2;
+    overflow-wrap: anywhere;
+}
+
+.teamtrip-cost-summary strong + strong {
+    margin-top: 6px;
+}
+
 .teamtrip-stats {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -302,10 +398,107 @@
     white-space: nowrap;
 }
 
+.teamtrip-table-cost small {
+    display: inline;
+    margin: 0 0 0 3px;
+}
+
 .teamtrip-two-col {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 18px;
+}
+
+.teamtrip-detail-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px;
+}
+
+.teamtrip-detail-grid .teamtrip-panel {
+    min-width: 0;
+}
+
+.teamtrip-entity-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.teamtrip-entity-list li {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 11px;
+    align-items: center;
+    min-width: 0;
+    padding: 11px 0;
+    border-top: 1px solid var(--color-border);
+}
+
+.teamtrip-entity-list li > div {
+    min-width: 0;
+}
+
+.teamtrip-entity-list strong,
+.teamtrip-entity-list small {
+    display: block;
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.teamtrip-entity-list small {
+    margin-top: 3px;
+    color: var(--color-text-maxcontrast);
+    font-size: 12px;
+}
+
+.teamtrip-entity-mark {
+    width: 12px;
+    height: 12px;
+    flex: 0 0 12px;
+    border-radius: 999px;
+    background: var(--teamtrip-entity-color, var(--color-primary-element));
+}
+
+.teamtrip-entity-icon {
+    display: inline-flex;
+    width: 34px;
+    height: 34px;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 34px;
+    border-radius: 10px;
+    background: color-mix(in srgb, var(--teamtrip-entity-color, var(--color-primary-element)) 16%, var(--color-main-background));
+    font-size: 17px;
+}
+
+.teamtrip-owner-row {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 12px;
+    align-items: center;
+    min-width: 0;
+    padding: 12px 0;
+    border-top: 1px solid var(--color-border);
+}
+
+.teamtrip-owner-row > span:first-child {
+    color: var(--color-text-maxcontrast);
+    font-weight: 650;
+}
+
+.teamtrip-owner-row strong {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.teamtrip-share-list li {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+}
+
+.teamtrip-share-empty {
+    padding-top: 10px;
+    border-top: 1px solid var(--color-border);
 }
 
 .teamtrip-clean-list {
@@ -604,6 +797,24 @@
         gap: 0;
     }
 
+    .teamtrip-detail-grid {
+        grid-template-columns: 1fr;
+        gap: 0;
+    }
+
+    .teamtrip-overview-panel {
+        grid-template-columns: 1fr;
+    }
+
+    .teamtrip-detail-list > div {
+        grid-template-columns: 1fr;
+        gap: 3px;
+    }
+
+    .teamtrip-cost-summary {
+        min-height: 96px;
+    }
+
     .teamtrip-meta-row,
     .teamtrip-tech dl > div {
         grid-template-columns: 1fr;
@@ -666,6 +877,17 @@
     .teamtrip-table-location {
         padding-top: 9px !important;
         border-top: 1px solid var(--color-border) !important;
+    }
+
+    .teamtrip-owner-row,
+    .teamtrip-share-list li {
+        grid-template-columns: auto minmax(0, 1fr);
+    }
+
+    .teamtrip-owner-row .teamtrip-badge,
+    .teamtrip-share-list .teamtrip-badge {
+        grid-column: 2;
+        justify-self: start;
     }
 
     .teamtrip-clean-list li {

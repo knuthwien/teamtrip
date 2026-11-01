@@ -9,6 +9,8 @@
 - Replace technical activity type names with localized labels and recognizable icons.
 - Remove activity UUIDs from the main table and prevent long values from creating oversized rows.
 - Present activities as compact cards on narrow screens instead of a horizontally scrolling table.
+- Add a read-only, iOS-inspired trip detail view with section navigation and a cost overview.
+- Surface travelers, categories, payment modes, currencies, budgets and shares without exposing technical identifiers.
 - Preserve all existing OCS routes, snapshot semantics, permissions and persistence behavior.
 
 ## 0.1.8
