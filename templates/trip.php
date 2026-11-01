@@ -6,14 +6,46 @@ $categories = is_array($trip['categories'] ?? null) ? array_values($trip['catego
 $paymentModes = is_array($trip['paymentModes'] ?? null)
     ? array_values($trip['paymentModes'])
     : (is_array($trip['paymentMethods'] ?? null) ? array_values($trip['paymentMethods']) : []);
-$budgets = is_array($trip['budgets'] ?? null) ? array_values($trip['budgets']) : [];
-$currencies = is_array($trip['currencies'] ?? null) ? array_values($trip['currencies']) : $budgets;
+$budgetSource = $trip['budgets'] ?? ($trip['budget'] ?? []);
+$currencySource = $trip['currencies'] ?? ($trip['currencyCodes'] ?? []);
 $scalarText = static function ($value): string {
     return is_scalar($value) ? trim((string)$value) : '';
 };
-$primaryCurrency = $scalarText($trip['currencyCode'] ?? $trip['currency'] ?? '');
-if ($currencies === [] && $primaryCurrency !== '') {
-    $currencies[] = ['currencyCode' => $primaryCurrency];
+$extractCurrencyCode = static function ($value) use ($scalarText): string {
+    if (is_array($value)) {
+        foreach (['currencyCode', 'code', 'currency', 'isoCode'] as $key) {
+            if (array_key_exists($key, $value)) {
+                $code = strtoupper($scalarText($value[$key]));
+                if (preg_match('/^[A-Z]{3}$/', $code) === 1) {
+                    return $code;
+                }
+            }
+        }
+        return '';
+    }
+
+    $code = strtoupper($scalarText($value));
+    return preg_match('/^[A-Z]{3}$/', $code) === 1 ? $code : '';
+};
+$primaryCurrency = $extractCurrencyCode($trip['currencyCode'] ?? '');
+if ($primaryCurrency === '') {
+    $primaryCurrency = $extractCurrencyCode($trip['currency'] ?? '');
+}
+$currencyCodes = [];
+$addCurrency = static function ($value) use (&$currencyCodes, $extractCurrencyCode): void {
+    $code = $extractCurrencyCode($value);
+    if ($code !== '') {
+        $currencyCodes[$code] = true;
+    }
+};
+$addCurrency($primaryCurrency);
+if (is_array($currencySource)) {
+    foreach ($currencySource as $key => $currency) {
+        $addCurrency($key);
+        $addCurrency($currency);
+    }
+} else {
+    $addCurrency($currencySource);
 }
 
 $roleLabels = [
@@ -104,7 +136,7 @@ $entryIcon = static function ($entry, string $fallback): string {
     if (!is_array($entry)) {
         return $fallback;
     }
-    foreach (['icon', 'emoji', 'symbol'] as $key) {
+    foreach (['icon', 'emoji', 'symbol', 'iconName', 'symbolName', 'sfSymbol'] as $key) {
         if (isset($entry[$key]) && is_scalar($entry[$key]) && trim((string)$entry[$key]) !== '') {
             return trim((string)$entry[$key]);
         }
@@ -139,11 +171,80 @@ $linkedUser = static function ($entry): string {
     }
     return '';
 };
+$resolveEntityIcon = static function ($entry, string $name, string $kind) use ($entryIcon): string {
+    $stored = $entryIcon($entry, '');
+    if ($stored !== '' && preg_match('/[^\x00-\x7F]/u', $stored) === 1) {
+        return $stored;
+    }
+
+    $haystack = mb_strtolower($name . ' ' . $stored, 'UTF-8');
+    $maps = $kind === 'payment'
+        ? [
+            ['card', 'karte', 'credit', 'debit', '💳'],
+            ['cash', 'bar', 'bargeld', '💵'],
+            ['bank', 'transfer', 'überweisung', 'ueberweisung', '🏦'],
+            ['paypal', 'wallet', 'apple pay', '📱'],
+        ]
+        : [
+            ['hotel', 'unterkunft', 'accommodation', 'bed', '🛏️'],
+            ['restaurant', 'essen', 'food', 'meal', 'fork', '🍽️'],
+            ['frühstück', 'breakfast', 'coffee', '☕'],
+            ['flug', 'flight', 'plane', 'airplane', '✈️'],
+            ['zug', 'train', 'tram', '🚆'],
+            ['bus', 'public transport', 'öffis', '🚌'],
+            ['auto', 'car', 'taxi', '🚗'],
+            ['fähre', 'ferry', 'ship', '⛴️'],
+            ['aktivität', 'activity', 'event', 'ticket', '🎟️'],
+            ['kultur', 'culture', 'museum', '🏛️'],
+            ['einkauf', 'shopping', 'shop', '🛍️'],
+            ['gebühr', 'fee', 'money', '💶'],
+        ];
+    foreach ($maps as $mapping) {
+        $icon = array_pop($mapping);
+        foreach ($mapping as $needle) {
+            if (str_contains($haystack, $needle)) {
+                return $icon;
+            }
+        }
+    }
+    return $kind === 'payment' ? '💳' : '✦';
+};
 $costTotals = [];
 foreach ($_['items'] as $item) {
-    $currency = $scalarText($item['currencyCode'] ?? $item['currency'] ?? $primaryCurrency);
+    $currency = $extractCurrencyCode($item['currencyCode'] ?? '');
+    if ($currency === '') {
+        $currency = $extractCurrencyCode($item['currency'] ?? $primaryCurrency);
+    }
+    $addCurrency($currency);
     $costTotals[$currency] = ($costTotals[$currency] ?? 0.0) + (float)($item['cost'] ?? 0);
 }
+$budgetTotals = [];
+$addBudget = static function ($amount, string $currency = '') use (&$budgetTotals, $primaryCurrency): void {
+    if (!is_numeric($amount) || (float)$amount <= 0) {
+        return;
+    }
+    $code = $currency !== '' ? $currency : $primaryCurrency;
+    $budgetTotals[$code] = ($budgetTotals[$code] ?? 0.0) + (float)$amount;
+};
+if (is_numeric($budgetSource)) {
+    $addBudget($budgetSource);
+} elseif (is_array($budgetSource)) {
+    foreach ($budgetSource as $key => $budget) {
+        $keyCurrency = $extractCurrencyCode($key);
+        if (is_numeric($budget)) {
+            $addBudget($budget, $keyCurrency);
+            continue;
+        }
+        if (!is_array($budget)) {
+            continue;
+        }
+        $amount = $budget['amount'] ?? ($budget['budget'] ?? ($budget['limit'] ?? ($budget['value'] ?? null)));
+        $currency = $extractCurrencyCode($budget) ?: $keyCurrency;
+        $addBudget($amount, $currency);
+        $addCurrency($currency);
+    }
+}
+$currencies = array_keys($currencyCodes);
 ?>
 <div id="teamtrip-app" class="teamtrip-wrap teamtrip-detail">
     <a class="teamtrip-back" href="<?php p($_['backUrl']); ?>">← <?php p($l->t('All trips')); ?></a>
@@ -208,20 +309,23 @@ foreach ($_['items'] as $item) {
                     $activityTitle = $scalarText($item['title'] ?? '');
                     $location = $scalarText($item['location'] ?? '');
                     $address = $scalarText($item['locationAddress'] ?? '');
-                    $itemCurrency = $scalarText($item['currencyCode'] ?? $item['currency'] ?? $primaryCurrency);
+                    $itemCurrency = $extractCurrencyCode($item['currencyCode'] ?? '');
+                    if ($itemCurrency === '') {
+                        $itemCurrency = $extractCurrencyCode($item['currency'] ?? $primaryCurrency);
+                    }
                     ?>
                     <tr>
                         <td class="teamtrip-table-start">
                             <span class="teamtrip-table-primary"><?php p($formatDateTime($item['fromAt'] ?? null)); ?></span>
-                            <?php if (!empty($item['fromTimeZoneId'])): ?><small><?php p((string)$item['fromTimeZoneId']); ?></small><?php endif; ?>
+                            <?php if (!empty($item['fromTimeZoneId'])): ?><div class="teamtrip-table-secondary"><?php p((string)$item['fromTimeZoneId']); ?></div><?php endif; ?>
                         </td>
                         <td class="teamtrip-table-activity">
                             <strong class="teamtrip-activity-title"><?php p($activityTitle !== '' ? $activityTitle : $type['label']); ?></strong>
-                            <span class="teamtrip-activity-type"><span aria-hidden="true"><?php p($type['icon']); ?></span><?php p($type['label']); ?></span>
+                            <div class="teamtrip-activity-type"><span aria-hidden="true"><?php p($type['icon']); ?></span><?php p($type['label']); ?></div>
                         </td>
                         <td class="teamtrip-table-location">
                             <?php if ($location !== ''): ?><span class="teamtrip-table-primary"><?php p($location); ?></span><?php endif; ?>
-                            <?php if ($address !== ''): ?><small><?php p($address); ?></small><?php endif; ?>
+                            <?php if ($address !== ''): ?><div class="teamtrip-table-secondary"><?php p($address); ?></div><?php endif; ?>
                             <?php if ($location === '' && $address === ''): ?>—<?php endif; ?>
                         </td>
                         <td class="teamtrip-table-cost"><?php p(number_format((float)($item['cost'] ?? 0), 2, '.', '')); ?><?php if ($itemCurrency !== ''): ?> <small><?php p($itemCurrency); ?></small><?php endif; ?></td>
@@ -232,17 +336,17 @@ foreach ($_['items'] as $item) {
         <?php endif; ?>
     </section>
 
-    <div class="teamtrip-detail-grid">
+    <div class="teamtrip-detail-grid teamtrip-compact-sections">
         <section id="travelers" class="teamtrip-panel teamtrip-anchor-section">
             <h2><?php p($l->t('Travelers')); ?></h2>
             <?php if ($travelers === []): ?>
                 <p class="teamtrip-muted"><?php p($l->t('No travelers stored.')); ?></p>
             <?php else: ?>
-                <ul class="teamtrip-entity-list">
+                <ul class="teamtrip-entity-list teamtrip-chip-list">
                     <?php foreach ($travelers as $traveler): ?>
                         <?php $travelerName = $entryName($traveler, ['name', 'title'], $l->t('Unnamed traveler')); $color = $entryColor($traveler); $userId = $linkedUser($traveler); ?>
                         <li>
-                            <span class="teamtrip-entity-mark"<?php if ($color !== null): ?> style="--teamtrip-entity-color: <?php p($color); ?>"<?php endif; ?> aria-hidden="true"></span>
+                            <span class="teamtrip-entity-icon"<?php if ($color !== null): ?> style="--teamtrip-entity-color: <?php p($color); ?>"<?php endif; ?> aria-hidden="true">👤</span>
                             <div><strong><?php p($travelerName); ?></strong><?php if ($userId !== ''): ?><small><?php p($l->t('Linked Nextcloud user')); ?> · <?php p($userId); ?></small><?php endif; ?></div>
                         </li>
                     <?php endforeach; ?>
@@ -255,9 +359,9 @@ foreach ($_['items'] as $item) {
             <?php if ($categories === []): ?>
                 <p class="teamtrip-muted"><?php p($l->t('No categories stored.')); ?></p>
             <?php else: ?>
-                <ul class="teamtrip-entity-list">
+                <ul class="teamtrip-entity-list teamtrip-chip-list">
                     <?php foreach ($categories as $category): ?>
-                        <?php $categoryName = $entryName($category, ['name', 'title', 'label'], $l->t('Unnamed category')); $categoryIcon = $entryIcon($category, '•'); $color = $entryColor($category); ?>
+                        <?php $categoryName = $entryName($category, ['name', 'title', 'label'], $l->t('Unnamed category')); $categoryIcon = $resolveEntityIcon($category, $categoryName, 'category'); $color = $entryColor($category); ?>
                         <li><span class="teamtrip-entity-icon"<?php if ($color !== null): ?> style="--teamtrip-entity-color: <?php p($color); ?>"<?php endif; ?> aria-hidden="true"><?php p($categoryIcon); ?></span><div><strong><?php p($categoryName); ?></strong></div></li>
                     <?php endforeach; ?>
                 </ul>
@@ -269,32 +373,32 @@ foreach ($_['items'] as $item) {
             <?php if ($paymentModes === []): ?>
                 <p class="teamtrip-muted"><?php p($l->t('No payment modes stored.')); ?></p>
             <?php else: ?>
-                <ul class="teamtrip-entity-list">
+                <ul class="teamtrip-entity-list teamtrip-chip-list">
                     <?php foreach ($paymentModes as $paymentMode): ?>
-                        <?php $modeName = $entryName($paymentMode, ['name', 'title', 'label'], $l->t('Unnamed payment mode')); $modeIcon = $entryIcon($paymentMode, '•'); $color = $entryColor($paymentMode); ?>
+                        <?php $modeName = $entryName($paymentMode, ['name', 'title', 'label'], $l->t('Unnamed payment mode')); $modeIcon = $resolveEntityIcon($paymentMode, $modeName, 'payment'); $color = $entryColor($paymentMode); ?>
                         <li><span class="teamtrip-entity-icon"<?php if ($color !== null): ?> style="--teamtrip-entity-color: <?php p($color); ?>"<?php endif; ?> aria-hidden="true"><?php p($modeIcon); ?></span><div><strong><?php p($modeName); ?></strong></div></li>
                     <?php endforeach; ?>
                 </ul>
             <?php endif; ?>
         </section>
 
-        <section id="currencies" class="teamtrip-panel teamtrip-anchor-section">
-            <h2><?php p($l->t('Currencies & budgets')); ?></h2>
-            <?php if ($currencies === []): ?>
-                <p class="teamtrip-muted"><?php p($l->t('No currencies or budgets stored.')); ?></p>
-            <?php else: ?>
-                <ul class="teamtrip-entity-list">
-                    <?php foreach ($currencies as $currency): ?>
-                        <?php
-                        $currencyName = $entryName($currency, ['currencyCode', 'code', 'currency', 'name', 'title'], $l->t('Not specified'));
-                        $budgetAmount = is_array($currency) ? ($currency['amount'] ?? $currency['budget'] ?? $currency['limit'] ?? null) : null;
-                        ?>
-                        <li><span class="teamtrip-entity-icon" aria-hidden="true">¤</span><div><strong><?php p($currencyName); ?></strong><?php if (is_numeric($budgetAmount)): ?><small><?php p($l->t('Budget')); ?> · <?php p(number_format((float)$budgetAmount, 2, '.', '')); ?></small><?php endif; ?></div></li>
-                    <?php endforeach; ?>
-                </ul>
-            <?php endif; ?>
-        </section>
     </div>
+
+    <section id="currencies" class="teamtrip-panel teamtrip-anchor-section teamtrip-currency-panel">
+        <h2><?php p($l->t('Currencies & budgets')); ?></h2>
+        <?php if ($currencies === [] && $budgetTotals === []): ?>
+            <p class="teamtrip-muted"><?php p($l->t('No currencies or budgets stored.')); ?></p>
+        <?php else: ?>
+            <ul class="teamtrip-currency-list">
+                <?php foreach ($currencies as $currency): ?>
+                    <li><span class="teamtrip-entity-icon" aria-hidden="true">¤</span><div><strong><?php p($currency); ?></strong><?php if (isset($budgetTotals[$currency])): ?><small><?php p($l->t('Budget')); ?> · <?php p(number_format($budgetTotals[$currency], 2, '.', '')); ?> <?php p($currency); ?></small><?php else: ?><small><?php p($l->t('No budget set.')); ?></small><?php endif; ?></div></li>
+                <?php endforeach; ?>
+                <?php if (isset($budgetTotals['']) && !in_array('', $currencies, true)): ?>
+                    <li><span class="teamtrip-entity-icon" aria-hidden="true">¤</span><div><strong><?php p($l->t('Not specified')); ?></strong><small><?php p($l->t('Budget')); ?> · <?php p(number_format($budgetTotals[''], 2, '.', '')); ?></small></div></li>
+                <?php endif; ?>
+            </ul>
+        <?php endif; ?>
+    </section>
 
     <section id="shares" class="teamtrip-panel teamtrip-anchor-section">
         <h2><?php p($l->t('Shares')); ?></h2>

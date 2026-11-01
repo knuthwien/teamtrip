@@ -11,6 +11,7 @@
 - Present activities as compact cards on narrow screens instead of a horizontally scrolling table.
 - Add a read-only, iOS-inspired trip detail view with section navigation and a cost overview.
 - Surface travelers, categories, payment modes, currencies, budgets and shares without exposing technical identifiers.
+- Compact travelers, categories and payment modes into icon chips, aggregate meaningful budgets by currency and strengthen page-heading and anchor navigation contrast.
 - Preserve all existing OCS routes, snapshot semantics, permissions and persistence behavior.
 
 ## 0.1.8
