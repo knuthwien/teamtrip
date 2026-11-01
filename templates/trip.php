@@ -194,6 +194,10 @@ $linkedUser = static function ($entry): string {
     }
     return '';
 };
+$isOwnerTraveler = static function (string $name): bool {
+    $normalized = mb_strtolower(trim($name), 'UTF-8');
+    return in_array($normalized, ['ich', 'me', 'moi', 'io', 'yo'], true);
+};
 $resolveEntityIcon = static function ($entry, string $name, string $kind) use ($entryIcon): string {
     $stored = $entryIcon($entry, '');
     if ($stored !== '' && preg_match('/[^\x00-\x7F]/u', $stored) === 1) {
@@ -367,11 +371,11 @@ $currencies = array_keys($currencyCodes);
             <?php else: ?>
                 <ul class="teamtrip-people-list">
                     <?php foreach ($travelers as $traveler): ?>
-                        <?php $travelerName = $entryName($traveler, ['name', 'title'], $l->t('Unnamed traveler')); $color = $entryColor($traveler); $userId = $linkedUser($traveler); ?>
+                        <?php $travelerName = $entryName($traveler, ['name', 'title'], $l->t('Unnamed traveler')); $color = $entryColor($traveler); $userId = $linkedUser($traveler); $isLinked = $userId !== '' || $isOwnerTraveler($travelerName); ?>
                         <li>
                             <span class="teamtrip-person-avatar"<?php if ($color !== null): ?> style="--teamtrip-entity-color: <?php p($color); ?>"<?php endif; ?>>
                                 <span aria-hidden="true">👤</span>
-                                <?php if ($userId !== ''): ?><span class="teamtrip-linked-badge" title="<?php p($l->t('Linked Nextcloud user')); ?>" aria-label="<?php p($l->t('Linked Nextcloud user')); ?>">✓</span><?php endif; ?>
+                                <?php if ($isLinked): ?><span class="teamtrip-linked-badge" title="<?php p($l->t('Linked Nextcloud user')); ?>" aria-label="<?php p($l->t('Linked Nextcloud user')); ?>">✓</span><?php endif; ?>
                             </span>
                             <strong><?php p($travelerName); ?></strong>
                             <?php if ($userId !== '' && mb_strtolower($userId, 'UTF-8') !== mb_strtolower($travelerName, 'UTF-8')): ?><small>@<?php p($userId); ?></small><?php endif; ?>
