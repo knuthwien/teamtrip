@@ -13,6 +13,7 @@
 - Surface travelers, categories, payment modes, currencies, budgets and shares without exposing technical identifiers.
 - Compact travelers, categories and payment modes into icon chips, aggregate meaningful budgets by currency and strengthen page-heading and anchor navigation contrast.
 - Bust stale Nextcloud stylesheet caches and refine the trip detail with linked-user avatar badges, compact category/payment tiles and stronger location hierarchy.
+- Prevent awkward category-name breaks and render real currency symbols instead of the generic currency placeholder.
 - Preserve all existing OCS routes, snapshot semantics, permissions and persistence behavior.
 
 ## 0.1.8

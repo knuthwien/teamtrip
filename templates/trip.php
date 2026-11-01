@@ -38,6 +38,29 @@ $addCurrency = static function ($value) use (&$currencyCodes, $extractCurrencyCo
         $currencyCodes[$code] = true;
     }
 };
+$currencySymbol = static function (string $code): string {
+    return match ($code) {
+        'EUR' => '€',
+        'USD' => '$',
+        'GBP' => '£',
+        'JPY', 'CNY' => '¥',
+        'CHF' => 'Fr.',
+        'CAD' => 'C$',
+        'AUD' => 'A$',
+        'NZD' => 'NZ$',
+        'INR' => '₹',
+        'KRW' => '₩',
+        'SEK', 'NOK', 'DKK' => 'kr',
+        'PLN' => 'zł',
+        'CZK' => 'Kč',
+        'HUF' => 'Ft',
+        'RON' => 'lei',
+        'BGN' => 'лв',
+        'TRY' => '₺',
+        'ZAR' => 'R',
+        default => '💱',
+    };
+};
 $addCurrency($primaryCurrency);
 if (is_array($currencySource)) {
     foreach ($currencySource as $key => $currency) {
@@ -395,10 +418,10 @@ $currencies = array_keys($currencyCodes);
         <?php else: ?>
             <ul class="teamtrip-currency-list">
                 <?php foreach ($currencies as $currency): ?>
-                    <li><span class="teamtrip-entity-icon" aria-hidden="true">¤</span><div><strong><?php p($currency); ?></strong><?php if (isset($budgetTotals[$currency])): ?><small><?php p($l->t('Budget')); ?> · <?php p(number_format($budgetTotals[$currency], 2, '.', '')); ?> <?php p($currency); ?></small><?php else: ?><small><?php p($l->t('No budget set.')); ?></small><?php endif; ?></div></li>
+                    <li><span class="teamtrip-entity-icon teamtrip-currency-symbol" aria-hidden="true"><?php p($currencySymbol($currency)); ?></span><div><strong><?php p($currency); ?></strong><?php if (isset($budgetTotals[$currency])): ?><small><?php p($l->t('Budget')); ?> · <?php p(number_format($budgetTotals[$currency], 2, '.', '')); ?> <?php p($currency); ?></small><?php else: ?><small><?php p($l->t('No budget set.')); ?></small><?php endif; ?></div></li>
                 <?php endforeach; ?>
                 <?php if (isset($budgetTotals['']) && !in_array('', $currencies, true)): ?>
-                    <li><span class="teamtrip-entity-icon" aria-hidden="true">¤</span><div><strong><?php p($l->t('Not specified')); ?></strong><small><?php p($l->t('Budget')); ?> · <?php p(number_format($budgetTotals[''], 2, '.', '')); ?></small></div></li>
+                    <li><span class="teamtrip-entity-icon teamtrip-currency-symbol" aria-hidden="true">💱</span><div><strong><?php p($l->t('Not specified')); ?></strong><small><?php p($l->t('Budget')); ?> · <?php p(number_format($budgetTotals[''], 2, '.', '')); ?></small></div></li>
                 <?php endif; ?>
             </ul>
         <?php endif; ?>
