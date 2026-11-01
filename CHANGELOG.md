@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.1
+
+- Rebuild the mobile trip overview with consistently left-aligned labels, compact rows and predictable spacing independent of Nextcloud theme defaults.
+- Keep long activity titles, notes, locations and addresses inside their responsive cards on narrow screens.
+- Add a cache-safe responsive stylesheet without changing the iOS synchronization API or stored trip data.
+
 ## 0.2.0
 
 - Document and freeze the TeamTrip 0.1.8 iOS synchronization contract for GUI-only development.

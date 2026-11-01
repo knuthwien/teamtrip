@@ -1,0 +1,128 @@
+/* TeamTrip 0.2.1: mobile overview and activity containment */
+
+.teamtrip-detail-list,
+.teamtrip-detail-list > div,
+.teamtrip-detail-list dt,
+.teamtrip-detail-list dd {
+    min-width: 0;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+.teamtrip-detail-list dt,
+.teamtrip-detail-list dd {
+    margin: 0 !important;
+    text-align: left !important;
+}
+
+.teamtrip-detail-list dt {
+    padding: 0 !important;
+}
+
+.teamtrip-detail-list dd {
+    padding: 0 !important;
+    overflow-wrap: anywhere;
+    word-break: normal;
+}
+
+.teamtrip-activity-days,
+.teamtrip-activity-day,
+.teamtrip-table-wrap,
+.teamtrip-table,
+.teamtrip-table tbody,
+.teamtrip-table tr,
+.teamtrip-table td,
+.teamtrip-table-start,
+.teamtrip-table-activity,
+.teamtrip-table-location {
+    min-width: 0;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+.teamtrip-activity-day > h3,
+.teamtrip-activity-title,
+.teamtrip-activity-note,
+.teamtrip-location-name,
+.teamtrip-table-secondary {
+    max-width: 100%;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
+@media (max-width: 720px) {
+    .teamtrip-overview-panel {
+        gap: 14px;
+    }
+
+    .teamtrip-overview-panel > div:first-child {
+        min-width: 0;
+    }
+
+    .teamtrip-detail-list > div {
+        display: grid !important;
+        grid-template-columns: minmax(0, 1fr) !important;
+        gap: 4px !important;
+        align-items: start;
+        padding: 13px 0 !important;
+    }
+
+    .teamtrip-detail-list dt,
+    .teamtrip-detail-list dd {
+        width: auto !important;
+        min-height: 0 !important;
+        line-height: 1.4;
+    }
+
+    .teamtrip-detail-list dt {
+        font-size: 13px;
+    }
+
+    .teamtrip-detail-list dd {
+        font-size: 15px;
+    }
+
+    .teamtrip-table-wrap,
+    .teamtrip-table,
+    .teamtrip-table tbody,
+    .teamtrip-table tr {
+        width: 100%;
+    }
+
+    .teamtrip-table tr {
+        overflow: hidden;
+    }
+
+    .teamtrip-table td,
+    .teamtrip-table-primary,
+    .teamtrip-table-secondary,
+    .teamtrip-activity-title,
+    .teamtrip-activity-note,
+    .teamtrip-location-name {
+        width: 100%;
+        min-width: 0;
+        max-width: 100%;
+        box-sizing: border-box;
+    }
+
+    .teamtrip-table-secondary,
+    .teamtrip-activity-title,
+    .teamtrip-activity-note,
+    .teamtrip-location-name {
+        white-space: normal !important;
+        overflow-wrap: anywhere !important;
+        word-break: break-word;
+    }
+
+    .teamtrip-activity-type {
+        max-width: 100%;
+        flex-wrap: wrap;
+        overflow-wrap: anywhere;
+    }
+
+    .teamtrip-table-cost {
+        width: auto;
+        max-width: 100%;
+    }
+}
