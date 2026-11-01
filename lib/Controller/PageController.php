@@ -29,7 +29,7 @@ class PageController extends Controller {
     #[NoAdminRequired]
     #[NoCSRFRequired]
     public function index(): TemplateResponse {
-        Util::addStyle('teamtrip', 'style');
+        Util::addStyle('teamtrip', 'teamtrip-0200-r3');
 
         $uid = $this->userSession->getUser()?->getUID() ?? '';
         $scopeParam = $this->request->getParam('scope', 'all');
@@ -119,7 +119,7 @@ class PageController extends Controller {
     #[NoAdminRequired]
     #[NoCSRFRequired]
     public function trip(string $uuid): TemplateResponse|NotFoundResponse {
-        Util::addStyle('teamtrip', 'style');
+        Util::addStyle('teamtrip', 'teamtrip-0200-r3');
         $uid = $this->userSession->getUser()?->getUID() ?? '';
         $role = $this->repository->roleFor($uuid, $uid);
         $row = $this->repository->find($uuid);

@@ -12,6 +12,7 @@
 - Add a read-only, iOS-inspired trip detail view with section navigation and a cost overview.
 - Surface travelers, categories, payment modes, currencies, budgets and shares without exposing technical identifiers.
 - Compact travelers, categories and payment modes into icon chips, aggregate meaningful budgets by currency and strengthen page-heading and anchor navigation contrast.
+- Bust stale Nextcloud stylesheet caches and refine the trip detail with linked-user avatar badges, compact category/payment tiles and stronger location hierarchy.
 - Preserve all existing OCS routes, snapshot semantics, permissions and persistence behavior.
 
 ## 0.1.8

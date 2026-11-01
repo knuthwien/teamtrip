@@ -324,7 +324,7 @@ $currencies = array_keys($currencyCodes);
                             <div class="teamtrip-activity-type"><span aria-hidden="true"><?php p($type['icon']); ?></span><?php p($type['label']); ?></div>
                         </td>
                         <td class="teamtrip-table-location">
-                            <?php if ($location !== ''): ?><span class="teamtrip-table-primary"><?php p($location); ?></span><?php endif; ?>
+                            <?php if ($location !== ''): ?><strong class="teamtrip-table-primary teamtrip-location-name"><?php p($location); ?></strong><?php endif; ?>
                             <?php if ($address !== ''): ?><div class="teamtrip-table-secondary"><?php p($address); ?></div><?php endif; ?>
                             <?php if ($location === '' && $address === ''): ?>—<?php endif; ?>
                         </td>
@@ -342,24 +342,28 @@ $currencies = array_keys($currencyCodes);
             <?php if ($travelers === []): ?>
                 <p class="teamtrip-muted"><?php p($l->t('No travelers stored.')); ?></p>
             <?php else: ?>
-                <ul class="teamtrip-entity-list teamtrip-chip-list">
+                <ul class="teamtrip-people-list">
                     <?php foreach ($travelers as $traveler): ?>
                         <?php $travelerName = $entryName($traveler, ['name', 'title'], $l->t('Unnamed traveler')); $color = $entryColor($traveler); $userId = $linkedUser($traveler); ?>
                         <li>
-                            <span class="teamtrip-entity-icon"<?php if ($color !== null): ?> style="--teamtrip-entity-color: <?php p($color); ?>"<?php endif; ?> aria-hidden="true">👤</span>
-                            <div><strong><?php p($travelerName); ?></strong><?php if ($userId !== ''): ?><small><?php p($l->t('Linked Nextcloud user')); ?> · <?php p($userId); ?></small><?php endif; ?></div>
+                            <span class="teamtrip-person-avatar"<?php if ($color !== null): ?> style="--teamtrip-entity-color: <?php p($color); ?>"<?php endif; ?>>
+                                <span aria-hidden="true">👤</span>
+                                <?php if ($userId !== ''): ?><span class="teamtrip-linked-badge" title="<?php p($l->t('Linked Nextcloud user')); ?>" aria-label="<?php p($l->t('Linked Nextcloud user')); ?>">✓</span><?php endif; ?>
+                            </span>
+                            <strong><?php p($travelerName); ?></strong>
+                            <?php if ($userId !== '' && mb_strtolower($userId, 'UTF-8') !== mb_strtolower($travelerName, 'UTF-8')): ?><small>@<?php p($userId); ?></small><?php endif; ?>
                         </li>
                     <?php endforeach; ?>
                 </ul>
             <?php endif; ?>
         </section>
 
-        <section id="categories" class="teamtrip-panel teamtrip-anchor-section">
+        <section id="categories" class="teamtrip-panel teamtrip-anchor-section teamtrip-categories-panel">
             <h2><?php p($l->t('Categories')); ?></h2>
             <?php if ($categories === []): ?>
                 <p class="teamtrip-muted"><?php p($l->t('No categories stored.')); ?></p>
             <?php else: ?>
-                <ul class="teamtrip-entity-list teamtrip-chip-list">
+                <ul class="teamtrip-tile-list teamtrip-category-list">
                     <?php foreach ($categories as $category): ?>
                         <?php $categoryName = $entryName($category, ['name', 'title', 'label'], $l->t('Unnamed category')); $categoryIcon = $resolveEntityIcon($category, $categoryName, 'category'); $color = $entryColor($category); ?>
                         <li><span class="teamtrip-entity-icon"<?php if ($color !== null): ?> style="--teamtrip-entity-color: <?php p($color); ?>"<?php endif; ?> aria-hidden="true"><?php p($categoryIcon); ?></span><div><strong><?php p($categoryName); ?></strong></div></li>
@@ -373,7 +377,7 @@ $currencies = array_keys($currencyCodes);
             <?php if ($paymentModes === []): ?>
                 <p class="teamtrip-muted"><?php p($l->t('No payment modes stored.')); ?></p>
             <?php else: ?>
-                <ul class="teamtrip-entity-list teamtrip-chip-list">
+                <ul class="teamtrip-tile-list teamtrip-payment-list">
                     <?php foreach ($paymentModes as $paymentMode): ?>
                         <?php $modeName = $entryName($paymentMode, ['name', 'title', 'label'], $l->t('Unnamed payment mode')); $modeIcon = $resolveEntityIcon($paymentMode, $modeName, 'payment'); $color = $entryColor($paymentMode); ?>
                         <li><span class="teamtrip-entity-icon"<?php if ($color !== null): ?> style="--teamtrip-entity-color: <?php p($color); ?>"<?php endif; ?> aria-hidden="true"><?php p($modeIcon); ?></span><div><strong><?php p($modeName); ?></strong></div></li>
