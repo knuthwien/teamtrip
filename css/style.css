@@ -76,7 +76,8 @@
 .teamtrip-card,
 .teamtrip-empty,
 .teamtrip-panel,
-.teamtrip-stats > div {
+.teamtrip-stats > div,
+.teamtrip-toolbar {
     box-sizing: border-box;
     border: 1px solid var(--color-border);
     background: var(--color-main-background);
@@ -84,8 +85,10 @@
 }
 
 .teamtrip-card {
-    display: block;
+    display: flex;
     min-width: 0;
+    min-height: 100%;
+    flex-direction: column;
     border-radius: 18px;
     padding: clamp(18px, 3vw, 24px);
     color: var(--color-main-text) !important;
@@ -108,7 +111,8 @@
     margin-bottom: 18px;
 }
 
-.teamtrip-card h2 {
+.teamtrip-card h2,
+.teamtrip-card h3 {
     min-width: 0;
     margin: 0;
     font-size: clamp(20px, 2.5vw, 24px);
@@ -146,7 +150,8 @@
 }
 
 .teamtrip-empty,
-.teamtrip-panel {
+.teamtrip-panel,
+.teamtrip-toolbar {
     border-radius: 18px;
     padding: clamp(18px, 3vw, 26px);
 }
@@ -317,6 +322,221 @@
     max-width: 100%;
 }
 
+/* TeamTrip 0.2 overview */
+.teamtrip-overview-header {
+    margin-bottom: 20px;
+}
+
+.teamtrip-eyebrow,
+.teamtrip-card-kicker {
+    margin: 0 0 5px !important;
+    color: var(--color-text-maxcontrast) !important;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+}
+
+.teamtrip-toolbar {
+    display: grid;
+    gap: 16px;
+    margin-bottom: 32px;
+    padding: 16px;
+}
+
+.teamtrip-search {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 10px;
+}
+
+.teamtrip-search input[type="search"] {
+    width: 100%;
+    min-width: 0;
+    height: 44px;
+    box-sizing: border-box;
+    margin: 0;
+    border: 1px solid var(--color-border-maxcontrast);
+    border-radius: 12px;
+    padding: 0 14px;
+    background: var(--color-main-background);
+    color: var(--color-main-text);
+    font: inherit;
+}
+
+.teamtrip-search input[type="search"]:focus {
+    border-color: var(--color-primary-element);
+    outline: 2px solid color-mix(in srgb, var(--color-primary-element) 30%, transparent);
+    outline-offset: 1px;
+}
+
+.teamtrip-search button,
+.teamtrip-secondary-action {
+    display: inline-flex;
+    min-height: 44px;
+    box-sizing: border-box;
+    align-items: center;
+    justify-content: center;
+    border: 0;
+    border-radius: 12px;
+    padding: 0 18px;
+    background: var(--color-primary-element);
+    color: var(--color-primary-element-text) !important;
+    font: inherit;
+    font-weight: 700;
+    text-decoration: none !important;
+    cursor: pointer;
+}
+
+.teamtrip-scope {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.teamtrip-scope a {
+    display: inline-flex;
+    min-height: 38px;
+    align-items: center;
+    gap: 8px;
+    border: 1px solid var(--color-border);
+    border-radius: 999px;
+    padding: 0 12px;
+    background: var(--color-background-dark);
+    color: var(--color-main-text) !important;
+    font-weight: 600;
+    text-decoration: none !important;
+}
+
+.teamtrip-scope a:hover,
+.teamtrip-scope a:focus-visible {
+    border-color: var(--color-primary-element);
+}
+
+.teamtrip-scope a.is-active {
+    border-color: var(--color-primary-element);
+    background: var(--color-primary-element);
+    color: var(--color-primary-element-text) !important;
+}
+
+.teamtrip-scope strong {
+    min-width: 23px;
+    border-radius: 999px;
+    padding: 2px 6px;
+    background: rgba(127, 127, 127, .18);
+    font-size: 12px;
+    text-align: center;
+}
+
+.teamtrip-section + .teamtrip-section {
+    margin-top: 36px;
+}
+
+.teamtrip-section-heading {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0 0 14px;
+}
+
+.teamtrip-section-heading h2 {
+    margin: 0;
+    font-size: clamp(22px, 3vw, 28px);
+    line-height: 1.2;
+}
+
+.teamtrip-section-heading > span {
+    display: inline-flex;
+    min-width: 28px;
+    min-height: 28px;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    background: var(--color-background-dark);
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.teamtrip-card-period {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 0 0 18px;
+    color: var(--color-text-maxcontrast);
+    font-weight: 600;
+}
+
+.teamtrip-card-facts {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    margin-bottom: 18px;
+}
+
+.teamtrip-card-facts > div {
+    min-width: 0;
+    border-radius: 12px;
+    padding: 10px 12px;
+    background: var(--color-background-dark);
+}
+
+.teamtrip-card-facts strong,
+.teamtrip-card-facts span {
+    display: block;
+}
+
+.teamtrip-card-facts strong {
+    font-size: 18px;
+    line-height: 1.2;
+}
+
+.teamtrip-card-facts span {
+    margin-top: 2px;
+    color: var(--color-text-maxcontrast);
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.teamtrip-card-footer {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: auto;
+    padding-top: 14px;
+    border-top: 1px solid var(--color-border);
+}
+
+.teamtrip-card-footer > span:first-child {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.teamtrip-card-open {
+    flex: 0 0 auto;
+    color: var(--color-primary-element);
+    font-size: 32px;
+    font-weight: 300;
+    line-height: 1;
+}
+
+.teamtrip-secondary-action {
+    margin-top: 16px;
+}
+
+.teamtrip-visually-hidden {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    margin: -1px !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    white-space: nowrap !important;
+    border: 0 !important;
+}
+
 @media (max-width: 720px) {
     .teamtrip-wrap {
         width: min(calc(100% - 24px), 1120px);
@@ -354,6 +574,37 @@
 
     .teamtrip-clean-list li > :last-child {
         text-align: left;
+    }
+
+    .teamtrip-toolbar {
+        margin-bottom: 26px;
+    }
+
+    .teamtrip-search {
+        grid-template-columns: 1fr;
+    }
+
+    .teamtrip-search button {
+        width: 100%;
+    }
+
+    .teamtrip-scope {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .teamtrip-scope a {
+        justify-content: center;
+        padding: 0 8px;
+    }
+
+    .teamtrip-card-period {
+        display: grid;
+        grid-template-columns: 1fr auto;
+    }
+
+    .teamtrip-card-period span:last-child {
+        grid-column: 1 / -1;
     }
 }
 

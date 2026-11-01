@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.2.0
+
+- Document and freeze the TeamTrip 0.1.8 iOS synchronization contract for GUI-only development.
+- Redesign the trip overview with upcoming and past trip sections.
+- Add trip-title search and filters for all, owned and shared trips.
+- Show activity and revision counts in responsive, accessible trip cards.
+- Preserve all existing OCS routes, snapshot semantics, permissions and persistence behavior.
+
 ## 0.1.8
 
 - Fix scrolling by using Nextcloud's outer content viewport as the scroll container.
