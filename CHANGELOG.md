@@ -6,6 +6,9 @@
 - Redesign the trip overview with upcoming and past trip sections.
 - Add trip-title search and filters for all, owned and shared trips.
 - Show activity and revision counts in responsive, accessible trip cards.
+- Replace technical activity type names with localized labels and recognizable icons.
+- Remove activity UUIDs from the main table and prevent long values from creating oversized rows.
+- Present activities as compact cards on narrow screens instead of a horizontally scrolling table.
 - Preserve all existing OCS routes, snapshot semantics, permissions and persistence behavior.
 
 ## 0.1.8

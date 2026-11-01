@@ -16,6 +16,44 @@ $formatDateTime = static function ($value): string {
     $timestamp = strtotime($value);
     return $timestamp === false ? $value : date('d.m.Y, H:i', $timestamp);
 };
+$activityTypes = [
+    'activity' => ['✦', 'Activity'],
+    'flight' => ['✈️', 'Flight'],
+    'train' => ['🚆', 'Train'],
+    'bus' => ['🚌', 'Bus'],
+    'car' => ['🚗', 'Car'],
+    'taxi' => ['🚕', 'Taxi'],
+    'ferry' => ['⛴️', 'Ferry'],
+    'hotel' => ['🛏️', 'Accommodation'],
+    'accommodation' => ['🛏️', 'Accommodation'],
+    'breakfast' => ['☕', 'Breakfast'],
+    'lunch' => ['🍽️', 'Lunch'],
+    'dinner' => ['🍽️', 'Dinner'],
+    'meal' => ['🍽️', 'Meal'],
+    'restaurant' => ['🍽️', 'Meal'],
+    'event' => ['🎟️', 'Event'],
+    'sightseeing' => ['◎', 'Sightseeing'],
+    'walk' => ['🚶', 'Walk'],
+    'hike' => ['🥾', 'Hike'],
+    'shopping' => ['🛍️', 'Shopping'],
+    'other' => ['•', 'Other'],
+];
+$formatActivityType = static function ($value) use ($activityTypes, $l): array {
+    $raw = trim((string)$value);
+    $key = strtolower($raw);
+    if (isset($activityTypes[$key])) {
+        return [
+            'icon' => $activityTypes[$key][0],
+            'label' => $l->t($activityTypes[$key][1]),
+        ];
+    }
+
+    $readable = trim(str_replace(['_', '-'], ' ', $raw));
+    return [
+        'icon' => '•',
+        'label' => $readable === '' ? $l->t('Other') : mb_convert_case($readable, MB_CASE_TITLE, 'UTF-8'),
+    ];
+};
 ?>
 <div id="teamtrip-app" class="teamtrip-wrap">
     <a class="teamtrip-back" href="<?php p($_['backUrl']); ?>">← <?php p($l->t('All trips')); ?></a>
@@ -40,15 +78,30 @@ $formatDateTime = static function ($value): string {
             <p class="teamtrip-muted"><?php p($l->t('No activities stored.')); ?></p>
         <?php else: ?>
             <div class="teamtrip-table-wrap"><table class="teamtrip-table">
-                <thead><tr><th><?php p($l->t('Start')); ?></th><th><?php p($l->t('Activity')); ?></th><th><?php p($l->t('Location')); ?></th><th><?php p($l->t('Cost')); ?></th><th><?php p($l->t('UUID')); ?></th></tr></thead>
+                <thead><tr><th><?php p($l->t('Start')); ?></th><th><?php p($l->t('Activity')); ?></th><th><?php p($l->t('Location')); ?></th><th><?php p($l->t('Cost')); ?></th></tr></thead>
                 <tbody>
                 <?php foreach ($_['items'] as $item): ?>
+                    <?php
+                    $type = $formatActivityType($item['typeRaw'] ?? '');
+                    $activityTitle = trim((string)($item['title'] ?? ''));
+                    $location = trim((string)($item['location'] ?? ''));
+                    $address = trim((string)($item['locationAddress'] ?? ''));
+                    ?>
                     <tr>
-                        <td><?php p($formatDateTime($item['fromAt'] ?? null)); ?><br><small><?php p((string)($item['fromTimeZoneId'] ?? '')); ?></small></td>
-                        <td><strong><?php p((string)($item['title'] ?? '')); ?></strong><br><small><?php p((string)($item['typeRaw'] ?? '')); ?></small></td>
-                        <td><?php p((string)($item['location'] ?? '')); ?><br><small><?php p((string)($item['locationAddress'] ?? '')); ?></small></td>
-                        <td><?php p(number_format((float)($item['cost'] ?? 0), 2, '.', '')); ?></td>
-                        <td class="teamtrip-uuid"><code><?php p((string)($item['uuid'] ?? '')); ?></code></td>
+                        <td class="teamtrip-table-start">
+                            <span class="teamtrip-table-primary"><?php p($formatDateTime($item['fromAt'] ?? null)); ?></span>
+                            <?php if (!empty($item['fromTimeZoneId'])): ?><small><?php p((string)$item['fromTimeZoneId']); ?></small><?php endif; ?>
+                        </td>
+                        <td class="teamtrip-table-activity">
+                            <strong class="teamtrip-activity-title"><?php p($activityTitle !== '' ? $activityTitle : $type['label']); ?></strong>
+                            <span class="teamtrip-activity-type"><span aria-hidden="true"><?php p($type['icon']); ?></span><?php p($type['label']); ?></span>
+                        </td>
+                        <td class="teamtrip-table-location">
+                            <?php if ($location !== ''): ?><span class="teamtrip-table-primary"><?php p($location); ?></span><?php endif; ?>
+                            <?php if ($address !== ''): ?><small><?php p($address); ?></small><?php endif; ?>
+                            <?php if ($location === '' && $address === ''): ?>—<?php endif; ?>
+                        </td>
+                        <td class="teamtrip-table-cost"><?php p(number_format((float)($item['cost'] ?? 0), 2, '.', '')); ?></td>
                     </tr>
                 <?php endforeach; ?>
                 </tbody>
