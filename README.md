@@ -3,7 +3,7 @@
 Initial synchronization backend and server-inspection UI for the TeamTrip iOS app.
 
 ## Requirements
-- Nextcloud 31–35
+- Nextcloud 31–33
 - HTTPS strongly recommended
 - TeamTrip iOS build with Nextcloud Sync support
 

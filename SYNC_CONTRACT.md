@@ -23,6 +23,10 @@ Until a separately reviewed sync release is planned, web-interface work must not
 - translations and documentation;
 - later, separately reviewed web-only actions using the existing API contract.
 
+The 0.2.0 web share forms are limited to the existing `read` and `edit` share
+records. They do not write to the trip snapshot, increment its revision or
+change any OCS response.
+
 ## Regression checklist
 
 Before packaging a release candidate, verify with the existing iOS app:

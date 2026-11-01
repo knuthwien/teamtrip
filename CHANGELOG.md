@@ -15,6 +15,9 @@
 - Bust stale Nextcloud stylesheet caches and refine the trip detail with linked-user avatar badges, compact category/payment tiles and stronger location hierarchy.
 - Recognize the trip owner's localized “Me” traveler as a linked Nextcloud account and keep category labels on one line.
 - Prevent awkward category-name breaks and render real currency symbols instead of the generic currency placeholder.
+- Group activities by local travel day and show time ranges, durations, time zones, notes, locations and costs responsively.
+- Add trip status, currency-safe totals, category and traveler cost breakdowns, plus notices for incomplete cost assignments.
+- Let trip owners add, update and remove Nextcloud shares through CSRF-protected web forms without changing trip snapshots.
 - Preserve all existing OCS routes, snapshot semantics, permissions and persistence behavior.
 
 ## 0.1.8

@@ -83,6 +83,53 @@ $formatDateTime = static function ($value): string {
     $timestamp = strtotime($value);
     return $timestamp === false ? $value : date('d.m.Y, H:i', $timestamp);
 };
+$parseLocalDateTime = static function ($value, $timeZoneId = null): ?\DateTimeImmutable {
+    if (!is_scalar($value) || trim((string)$value) === '') {
+        return null;
+    }
+    try {
+        $date = new \DateTimeImmutable((string)$value);
+        if (is_scalar($timeZoneId) && trim((string)$timeZoneId) !== '') {
+            $date = $date->setTimezone(new \DateTimeZone(trim((string)$timeZoneId)));
+        }
+        return $date;
+    } catch (\Throwable $e) {
+        return null;
+    }
+};
+$formatDay = static function (\DateTimeImmutable $date) use ($l): string {
+    if (class_exists(\IntlDateFormatter::class)) {
+        $formatter = new \IntlDateFormatter(
+            $l->getLanguageCode(),
+            \IntlDateFormatter::FULL,
+            \IntlDateFormatter::NONE,
+            $date->getTimezone()->getName(),
+            \IntlDateFormatter::GREGORIAN,
+            'EEEE, d. MMMM yyyy',
+        );
+        $formatted = $formatter->format($date);
+        if (is_string($formatted) && $formatted !== '') {
+            return $formatted;
+        }
+    }
+    return $date->format('d.m.Y');
+};
+$formatTime = static fn(?\DateTimeImmutable $date): string => $date?->format('H:i') ?? '—';
+$formatDuration = static function (?\DateTimeImmutable $start, ?\DateTimeImmutable $end, $storedMinutes = null): string {
+    $minutes = is_numeric($storedMinutes) ? max(0, (int)round((float)$storedMinutes)) : null;
+    if ($minutes === null && $start !== null && $end !== null && $end >= $start) {
+        $minutes = (int)round(($end->getTimestamp() - $start->getTimestamp()) / 60);
+    }
+    if ($minutes === null || $minutes <= 0) {
+        return '';
+    }
+    $hours = intdiv($minutes, 60);
+    $remaining = $minutes % 60;
+    if ($hours > 0 && $remaining > 0) {
+        return $hours . ' h ' . $remaining . ' min';
+    }
+    return $hours > 0 ? $hours . ' h' : $remaining . ' min';
+};
 $activityTypes = [
     'activity' => ['✦', 'Activity'],
     'flight' => ['✈️', 'Flight'],
@@ -194,6 +241,45 @@ $linkedUser = static function ($entry): string {
     }
     return '';
 };
+$entryIdentifiers = static function ($entry): array {
+    if (!is_array($entry)) {
+        return [];
+    }
+    $identifiers = [];
+    foreach (['uuid', 'id', 'categoryId', 'categoryUUID', 'categoryUuid', 'travelerId', 'travelerUUID', 'travelerUuid', 'memberId', 'memberUUID', 'typeRaw', 'rawValue', 'type', 'systemName'] as $key) {
+        if (isset($entry[$key]) && is_scalar($entry[$key])) {
+            $value = trim((string)$entry[$key]);
+            if ($value !== '') {
+                $identifiers[] = mb_strtolower($value, 'UTF-8');
+            }
+        }
+    }
+    return array_values(array_unique($identifiers));
+};
+$itemReference = static function (array $item, array $keys) use ($scalarText): string {
+    foreach ($keys as $key) {
+        if (!array_key_exists($key, $item)) {
+            continue;
+        }
+        $value = $item[$key];
+        if (is_array($value)) {
+            foreach (['uuid', 'id', 'name', 'title', 'label'] as $nestedKey) {
+                if (array_key_exists($nestedKey, $value)) {
+                    $nested = $scalarText($value[$nestedKey]);
+                    if ($nested !== '') {
+                        return mb_strtolower($nested, 'UTF-8');
+                    }
+                }
+            }
+            continue;
+        }
+        $reference = $scalarText($value);
+        if ($reference !== '') {
+            return mb_strtolower($reference, 'UTF-8');
+        }
+    }
+    return '';
+};
 $isOwnerTraveler = static function (string $name): bool {
     $normalized = mb_strtolower(trim($name), 'UTF-8');
     return in_array($normalized, ['ich', 'me', 'moi', 'io', 'yo'], true);
@@ -236,15 +322,104 @@ $resolveEntityIcon = static function ($entry, string $name, string $kind) use ($
     }
     return $kind === 'payment' ? '💳' : '✦';
 };
+$categoryLookup = [];
+foreach ($categories as $index => $category) {
+    $name = $entryName($category, ['name', 'title', 'label'], $l->t('Unnamed category'));
+    $entity = [
+        'key' => 'category-' . $index,
+        'name' => $name,
+        'icon' => $resolveEntityIcon($category, $name, 'category'),
+    ];
+    foreach (array_merge($entryIdentifiers($category), [mb_strtolower($name, 'UTF-8')]) as $alias) {
+        $categoryLookup[$alias] = $entity;
+    }
+}
+$travelerLookup = [];
+foreach ($travelers as $index => $traveler) {
+    $name = $entryName($traveler, ['name', 'title', 'label'], $l->t('Unnamed traveler'));
+    $entity = ['key' => 'traveler-' . $index, 'name' => $name];
+    foreach (array_merge($entryIdentifiers($traveler), [mb_strtolower($name, 'UTF-8')]) as $alias) {
+        $travelerLookup[$alias] = $entity;
+    }
+}
+
 $costTotals = [];
+$categoryCosts = [];
+$travelerCosts = [];
+$activityGroups = [];
+$dataWarnings = [
+    'missingCategory' => 0,
+    'unknownCategory' => 0,
+    'unknownTraveler' => 0,
+    'missingCurrency' => 0,
+];
+$categoryReferenceKeys = ['categoryId', 'categoryUUID', 'categoryUuid', 'category', 'categoryName', 'typeRaw', 'type'];
+$travelerReferenceKeys = ['travelerId', 'travelerUUID', 'travelerUuid', 'memberId', 'memberUUID', 'paidById', 'payerId', 'payerUUID', 'traveler'];
 foreach ($_['items'] as $item) {
+    $start = $parseLocalDateTime($item['fromAt'] ?? null, $item['fromTimeZoneId'] ?? null);
+    $endValue = $item['toAt'] ?? ($item['endAt'] ?? ($item['untilAt'] ?? null));
+    $endTimeZone = $item['toTimeZoneId'] ?? ($item['endTimeZoneId'] ?? ($item['fromTimeZoneId'] ?? null));
+    $end = $parseLocalDateTime($endValue, $endTimeZone);
+    $groupKey = $start?->format('Y-m-d') ?? 'undated';
+    if (!isset($activityGroups[$groupKey])) {
+        $activityGroups[$groupKey] = [
+            'label' => $start !== null ? $formatDay($start) : $l->t('Without date'),
+            'items' => [],
+        ];
+    }
+    $activityGroups[$groupKey]['items'][] = [
+        'item' => $item,
+        'start' => $start,
+        'end' => $end,
+        'duration' => $formatDuration($start, $end, $item['durationMinutes'] ?? ($item['duration'] ?? null)),
+    ];
+
+    $amount = is_numeric($item['cost'] ?? null) ? (float)$item['cost'] : 0.0;
     $currency = $extractCurrencyCode($item['currencyCode'] ?? '');
     if ($currency === '') {
         $currency = $extractCurrencyCode($item['currency'] ?? $primaryCurrency);
     }
+    if ($currency === '' && $amount != 0.0) {
+        ++$dataWarnings['missingCurrency'];
+    }
     $addCurrency($currency);
-    $costTotals[$currency] = ($costTotals[$currency] ?? 0.0) + (float)($item['cost'] ?? 0);
+    $costTotals[$currency] = ($costTotals[$currency] ?? 0.0) + $amount;
+    if ($amount == 0.0) {
+        continue;
+    }
+
+    $categoryReference = $itemReference($item, $categoryReferenceKeys);
+    if ($categoryReference === '') {
+        ++$dataWarnings['missingCategory'];
+        $categoryEntity = ['key' => 'unassigned', 'name' => $l->t('Unassigned'), 'icon' => '○'];
+    } elseif (isset($categoryLookup[$categoryReference])) {
+        $categoryEntity = $categoryLookup[$categoryReference];
+    } else {
+        ++$dataWarnings['unknownCategory'];
+        $categoryEntity = ['key' => 'unknown', 'name' => $l->t('Unknown category'), 'icon' => '?'];
+    }
+    $categoryKey = $categoryEntity['key'];
+    $categoryCosts[$categoryKey] ??= ['name' => $categoryEntity['name'], 'icon' => $categoryEntity['icon'], 'totals' => []];
+    $categoryCosts[$categoryKey]['totals'][$currency] = ($categoryCosts[$categoryKey]['totals'][$currency] ?? 0.0) + $amount;
+
+    $travelerReference = $itemReference($item, $travelerReferenceKeys);
+    if ($travelerReference !== '') {
+        if (isset($travelerLookup[$travelerReference])) {
+            $travelerEntity = $travelerLookup[$travelerReference];
+            $travelerKey = $travelerEntity['key'];
+            $travelerCosts[$travelerKey] ??= ['name' => $travelerEntity['name'], 'totals' => []];
+            $travelerCosts[$travelerKey]['totals'][$currency] = ($travelerCosts[$travelerKey]['totals'][$currency] ?? 0.0) + $amount;
+        } else {
+            ++$dataWarnings['unknownTraveler'];
+        }
+    }
 }
+if (isset($activityGroups['undated'])) {
+    $undated = $activityGroups['undated'];
+    unset($activityGroups['undated']);
+    $activityGroups['undated'] = $undated;
+}
+$dataWarningCount = array_sum($dataWarnings);
 $budgetTotals = [];
 $addBudget = static function ($amount, string $currency = '') use (&$budgetTotals, $primaryCurrency): void {
     if (!is_numeric($amount) || (float)$amount <= 0) {
@@ -272,6 +447,27 @@ if (is_numeric($budgetSource)) {
     }
 }
 $currencies = array_keys($currencyCodes);
+$departure = $parseLocalDateTime($trip['departureAt'] ?? null, $trip['departureTimeZoneId'] ?? null);
+$arrival = $parseLocalDateTime($trip['arriveHomeAt'] ?? null, $trip['arriveHomeTimeZoneId'] ?? null);
+$now = new \DateTimeImmutable('now');
+$tripStatus = ['label' => $l->t('Date not specified'), 'detail' => ''];
+if ($departure !== null && $now < $departure) {
+    $days = max(0, (int)ceil(($departure->getTimestamp() - $now->getTimestamp()) / 86400));
+    $tripStatus = [
+        'label' => $l->t('Upcoming'),
+        'detail' => $days === 0 ? $l->t('Starts today') : $l->t('Starts in %s days', [(string)$days]),
+    ];
+} elseif ($departure !== null && ($arrival === null || $now <= $arrival)) {
+    $tripStatus = ['label' => $l->t('In progress'), 'detail' => $l->t('The trip is currently underway.')];
+} elseif ($arrival !== null && $now > $arrival) {
+    $tripStatus = ['label' => $l->t('Past'), 'detail' => $l->t('The trip has ended.')];
+}
+$shareNotices = [
+    'saved' => ['success', $l->t('The share was saved.')],
+    'removed' => ['success', $l->t('The share was removed.')],
+    'invalid-user' => ['error', $l->t('Select a valid Nextcloud user.')],
+    'invalid-role' => ['error', $l->t('Select a valid permission.')],
+];
 ?>
 <div id="teamtrip-app" class="teamtrip-wrap teamtrip-detail">
     <a class="teamtrip-back" href="<?php p($_['backUrl']); ?>">← <?php p($l->t('All trips')); ?></a>
@@ -287,6 +483,7 @@ $currencies = array_keys($currencyCodes);
     <nav class="teamtrip-detail-nav" aria-label="<?php p($l->t('Trip sections')); ?>">
         <a href="#overview"><?php p($l->t('Overview')); ?></a>
         <a href="#activities"><?php p($l->t('Activities')); ?></a>
+        <a href="#costs"><?php p($l->t('Costs')); ?></a>
         <a href="#travelers"><?php p($l->t('Travelers')); ?></a>
         <a href="#categories"><?php p($l->t('Categories')); ?></a>
         <a href="#payment-modes"><?php p($l->t('Payment modes')); ?></a>
@@ -301,6 +498,7 @@ $currencies = array_keys($currencyCodes);
                 <div><dt><?php p($l->t('Period')); ?></dt><dd><?php p($formatDateTime($trip['departureAt'] ?? null)); ?> → <?php p($formatDateTime($trip['arriveHomeAt'] ?? null)); ?></dd></div>
                 <div><dt><?php p($l->t('Owner')); ?></dt><dd><?php p($_['owner']); ?></dd></div>
                 <div><dt><?php p($l->t('Access')); ?></dt><dd><?php p($roleLabels[$_['role']] ?? $_['role']); ?></dd></div>
+                <div><dt><?php p($l->t('Trip status')); ?></dt><dd><strong><?php p($tripStatus['label']); ?></strong><?php if ($tripStatus['detail'] !== ''): ?><small><?php p($tripStatus['detail']); ?></small><?php endif; ?></dd></div>
             </dl>
         </div>
         <div class="teamtrip-cost-summary">
@@ -327,39 +525,97 @@ $currencies = array_keys($currencyCodes);
         <?php if (empty($_['items'])): ?>
             <p class="teamtrip-muted"><?php p($l->t('No activities stored.')); ?></p>
         <?php else: ?>
-            <div class="teamtrip-table-wrap"><table class="teamtrip-table">
-                <thead><tr><th><?php p($l->t('Start')); ?></th><th><?php p($l->t('Activity')); ?></th><th><?php p($l->t('Location')); ?></th><th><?php p($l->t('Cost')); ?></th></tr></thead>
-                <tbody>
-                <?php foreach ($_['items'] as $item): ?>
-                    <?php
-                    $type = $formatActivityType($item['typeRaw'] ?? '');
-                    $activityTitle = $scalarText($item['title'] ?? '');
-                    $location = $scalarText($item['location'] ?? '');
-                    $address = $scalarText($item['locationAddress'] ?? '');
-                    $itemCurrency = $extractCurrencyCode($item['currencyCode'] ?? '');
-                    if ($itemCurrency === '') {
-                        $itemCurrency = $extractCurrencyCode($item['currency'] ?? $primaryCurrency);
-                    }
-                    ?>
-                    <tr>
-                        <td class="teamtrip-table-start">
-                            <span class="teamtrip-table-primary"><?php p($formatDateTime($item['fromAt'] ?? null)); ?></span>
-                            <?php if (!empty($item['fromTimeZoneId'])): ?><div class="teamtrip-table-secondary"><?php p((string)$item['fromTimeZoneId']); ?></div><?php endif; ?>
-                        </td>
-                        <td class="teamtrip-table-activity">
-                            <strong class="teamtrip-activity-title"><?php p($activityTitle !== '' ? $activityTitle : $type['label']); ?></strong>
-                            <div class="teamtrip-activity-type"><span aria-hidden="true"><?php p($type['icon']); ?></span><?php p($type['label']); ?></div>
-                        </td>
-                        <td class="teamtrip-table-location">
-                            <?php if ($location !== ''): ?><strong class="teamtrip-table-primary teamtrip-location-name"><?php p($location); ?></strong><?php endif; ?>
-                            <?php if ($address !== ''): ?><div class="teamtrip-table-secondary"><?php p($address); ?></div><?php endif; ?>
-                            <?php if ($location === '' && $address === ''): ?>—<?php endif; ?>
-                        </td>
-                        <td class="teamtrip-table-cost"><?php p(number_format((float)($item['cost'] ?? 0), 2, '.', '')); ?><?php if ($itemCurrency !== ''): ?> <small><?php p($itemCurrency); ?></small><?php endif; ?></td>
-                    </tr>
+            <div class="teamtrip-activity-days">
+                <?php foreach ($activityGroups as $activityGroup): ?>
+                    <section class="teamtrip-activity-day">
+                        <h3><span aria-hidden="true">▣</span><?php p($activityGroup['label']); ?></h3>
+                        <div class="teamtrip-table-wrap"><table class="teamtrip-table">
+                            <thead><tr><th><?php p($l->t('Time')); ?></th><th><?php p($l->t('Activity')); ?></th><th><?php p($l->t('Location')); ?></th><th><?php p($l->t('Cost')); ?></th></tr></thead>
+                            <tbody>
+                            <?php foreach ($activityGroup['items'] as $activity): ?>
+                                <?php
+                                $item = $activity['item'];
+                                $type = $formatActivityType($item['typeRaw'] ?? '');
+                                $activityTitle = $scalarText($item['title'] ?? '');
+                                $activityNote = $scalarText($item['notes'] ?? ($item['note'] ?? ($item['details'] ?? '')));
+                                $location = $scalarText($item['location'] ?? '');
+                                $address = $scalarText($item['locationAddress'] ?? '');
+                                $itemCurrency = $extractCurrencyCode($item['currencyCode'] ?? '');
+                                if ($itemCurrency === '') {
+                                    $itemCurrency = $extractCurrencyCode($item['currency'] ?? $primaryCurrency);
+                                }
+                                ?>
+                                <tr>
+                                    <td class="teamtrip-table-start">
+                                        <span class="teamtrip-table-primary teamtrip-time-range"><?php p($formatTime($activity['start'])); ?><?php if ($activity['end'] !== null): ?>–<?php p($formatTime($activity['end'])); ?><?php endif; ?></span>
+                                        <?php if (!empty($item['fromTimeZoneId'])): ?><div class="teamtrip-table-secondary"><?php p((string)$item['fromTimeZoneId']); ?></div><?php endif; ?>
+                                        <?php if ($activity['duration'] !== ''): ?><div class="teamtrip-table-secondary"><?php p($l->t('Duration')); ?> · <?php p($activity['duration']); ?></div><?php endif; ?>
+                                    </td>
+                                    <td class="teamtrip-table-activity">
+                                        <strong class="teamtrip-activity-title"><?php p($activityTitle !== '' ? $activityTitle : $type['label']); ?></strong>
+                                        <div class="teamtrip-activity-type"><span aria-hidden="true"><?php p($type['icon']); ?></span><?php p($type['label']); ?></div>
+                                        <?php if ($activityNote !== ''): ?><div class="teamtrip-table-secondary teamtrip-activity-note"><?php p($activityNote); ?></div><?php endif; ?>
+                                    </td>
+                                    <td class="teamtrip-table-location">
+                                        <?php if ($location !== ''): ?><strong class="teamtrip-table-primary teamtrip-location-name"><?php p($location); ?></strong><?php endif; ?>
+                                        <?php if ($address !== ''): ?><div class="teamtrip-table-secondary"><?php p($address); ?></div><?php endif; ?>
+                                        <?php if ($location === '' && $address === ''): ?>—<?php endif; ?>
+                                    </td>
+                                    <td class="teamtrip-table-cost"><?php p(number_format((float)($item['cost'] ?? 0), 2, '.', '')); ?><?php if ($itemCurrency !== ''): ?> <small><?php p($itemCurrency); ?></small><?php endif; ?></td>
+                                </tr>
+                            <?php endforeach; ?>
+                            </tbody>
+                        </table></div>
+                    </section>
                 <?php endforeach; ?>
-                </tbody>
-            </table></div>
+            </div>
+        <?php endif; ?>
+    </section>
+
+    <section id="costs" class="teamtrip-panel teamtrip-anchor-section">
+        <div class="teamtrip-section-title-row">
+            <div>
+                <h2><?php p($l->t('Cost summary')); ?></h2>
+                <p class="teamtrip-muted"><?php p($l->t('Costs remain separated by currency.')); ?></p>
+            </div>
+            <span class="teamtrip-status-pill"><strong><?php p($tripStatus['label']); ?></strong><?php if ($tripStatus['detail'] !== ''): ?><small><?php p($tripStatus['detail']); ?></small><?php endif; ?></span>
+        </div>
+        <div class="teamtrip-cost-breakdown-grid">
+            <article>
+                <h3><?php p($l->t('By category')); ?></h3>
+                <?php if ($categoryCosts === []): ?>
+                    <p class="teamtrip-muted"><?php p($l->t('No category costs available.')); ?></p>
+                <?php else: ?>
+                    <ul class="teamtrip-breakdown-list">
+                        <?php foreach ($categoryCosts as $categoryCost): ?>
+                            <li><span class="teamtrip-entity-icon" aria-hidden="true"><?php p($categoryCost['icon']); ?></span><strong><?php p($categoryCost['name']); ?></strong><span><?php foreach ($categoryCost['totals'] as $currency => $amount): ?><b><?php p(number_format($amount, 2, '.', '')); ?><?php if ($currency !== ''): ?> <?php p($currency); ?><?php endif; ?></b><?php endforeach; ?></span></li>
+                        <?php endforeach; ?>
+                    </ul>
+                <?php endif; ?>
+            </article>
+            <article>
+                <h3><?php p($l->t('By traveler')); ?></h3>
+                <?php if ($travelerCosts === []): ?>
+                    <p class="teamtrip-muted"><?php p($l->t('No costs are directly assigned to travelers.')); ?></p>
+                <?php else: ?>
+                    <ul class="teamtrip-breakdown-list">
+                        <?php foreach ($travelerCosts as $travelerCost): ?>
+                            <li><span class="teamtrip-entity-icon" aria-hidden="true">👤</span><strong><?php p($travelerCost['name']); ?></strong><span><?php foreach ($travelerCost['totals'] as $currency => $amount): ?><b><?php p(number_format($amount, 2, '.', '')); ?><?php if ($currency !== ''): ?> <?php p($currency); ?><?php endif; ?></b><?php endforeach; ?></span></li>
+                        <?php endforeach; ?>
+                    </ul>
+                <?php endif; ?>
+            </article>
+        </div>
+        <?php if ($dataWarningCount > 0): ?>
+            <aside class="teamtrip-data-notice">
+                <strong><?php p($l->t('Check incomplete cost data')); ?></strong>
+                <ul>
+                    <?php if ($dataWarnings['missingCategory'] > 0): ?><li><?php p($l->t('%s activities with costs have no category.', [(string)$dataWarnings['missingCategory']])); ?></li><?php endif; ?>
+                    <?php if ($dataWarnings['unknownCategory'] > 0): ?><li><?php p($l->t('%s category references could not be matched.', [(string)$dataWarnings['unknownCategory']])); ?></li><?php endif; ?>
+                    <?php if ($dataWarnings['unknownTraveler'] > 0): ?><li><?php p($l->t('%s traveler references could not be matched.', [(string)$dataWarnings['unknownTraveler']])); ?></li><?php endif; ?>
+                    <?php if ($dataWarnings['missingCurrency'] > 0): ?><li><?php p($l->t('%s activities with costs have no currency.', [(string)$dataWarnings['missingCurrency']])); ?></li><?php endif; ?>
+                </ul>
+            </aside>
         <?php endif; ?>
     </section>
 
@@ -432,16 +688,58 @@ $currencies = array_keys($currencyCodes);
     </section>
 
     <section id="shares" class="teamtrip-panel teamtrip-anchor-section">
-        <h2><?php p($l->t('Shares')); ?></h2>
+        <div class="teamtrip-section-title-row"><div><h2><?php p($l->t('Shares')); ?></h2><?php if ($_['role'] === 'owner'): ?><p class="teamtrip-muted"><?php p($l->t('Add Nextcloud users or change their permission without modifying the trip data.')); ?></p><?php endif; ?></div></div>
+        <?php if ($_['shareStatus'] !== '' && isset($shareNotices[$_['shareStatus']])): ?>
+            <p class="teamtrip-form-notice is-<?php p($shareNotices[$_['shareStatus']][0]); ?>" role="status"><?php p($shareNotices[$_['shareStatus']][1]); ?></p>
+        <?php endif; ?>
         <div class="teamtrip-owner-row"><span><?php p($l->t('Owner')); ?></span><strong><?php p($_['owner']); ?></strong><span class="teamtrip-badge"><?php p($roleLabels['owner']); ?></span></div>
         <?php if ($_['shares'] === []): ?>
             <p class="teamtrip-muted teamtrip-share-empty"><?php p($l->t('This trip is not shared.')); ?></p>
         <?php else: ?>
             <ul class="teamtrip-entity-list teamtrip-share-list">
                 <?php foreach ($_['shares'] as $share): ?>
-                    <li><span class="teamtrip-entity-icon" aria-hidden="true">👤</span><div><strong><?php p($share['userId']); ?></strong></div><span class="teamtrip-badge"><?php p($roleLabels[$share['role']] ?? $share['role']); ?></span></li>
+                    <li>
+                        <span class="teamtrip-entity-icon" aria-hidden="true">👤</span>
+                        <div><strong><?php p($share['userId']); ?></strong></div>
+                        <?php if ($_['role'] === 'owner'): ?>
+                            <form class="teamtrip-share-role-form" action="<?php p($_['shareSaveUrl']); ?>" method="post">
+                                <input type="hidden" name="requesttoken" value="<?php p(\OCP\Util::callRegister()); ?>" data-teamtrip-requesttoken>
+                                <input type="hidden" name="shareUserId" value="<?php p($share['userId']); ?>">
+                                <label class="teamtrip-visually-hidden" for="share-role-<?php p(md5($share['userId'])); ?>"><?php p($l->t('Permission for %s', [$share['userId']])); ?></label>
+                                <select id="share-role-<?php p(md5($share['userId'])); ?>" name="shareRole">
+                                    <option value="read"<?php if ($share['role'] === 'read'): ?> selected<?php endif; ?>><?php p($roleLabels['read']); ?></option>
+                                    <option value="edit"<?php if ($share['role'] === 'edit'): ?> selected<?php endif; ?>><?php p($roleLabels['edit']); ?></option>
+                                </select>
+                                <button type="submit" class="teamtrip-small-button"><?php p($l->t('Save')); ?></button>
+                            </form>
+                            <form action="<?php p($_['shareRemoveUrl']); ?>" method="post" data-teamtrip-confirm-remove="<?php p($l->t('Remove share for %s?', [$share['userId']])); ?>">
+                                <input type="hidden" name="requesttoken" value="<?php p(\OCP\Util::callRegister()); ?>" data-teamtrip-requesttoken>
+                                <input type="hidden" name="shareUserId" value="<?php p($share['userId']); ?>">
+                                <button type="submit" class="teamtrip-small-button teamtrip-danger-button"><?php p($l->t('Remove')); ?></button>
+                            </form>
+                        <?php else: ?>
+                            <span class="teamtrip-badge"><?php p($roleLabels[$share['role']] ?? $share['role']); ?></span>
+                        <?php endif; ?>
+                    </li>
                 <?php endforeach; ?>
             </ul>
+        <?php endif; ?>
+        <?php if ($_['role'] === 'owner'): ?>
+            <form class="teamtrip-add-share-form" action="<?php p($_['shareSaveUrl']); ?>" method="post">
+                <input type="hidden" name="requesttoken" value="<?php p(\OCP\Util::callRegister()); ?>" data-teamtrip-requesttoken>
+                <div>
+                    <label for="teamtrip-share-user"><?php p($l->t('Nextcloud user')); ?></label>
+                    <input id="teamtrip-share-user" name="shareUserId" type="text" list="teamtrip-share-users" required autocomplete="off" placeholder="<?php p($l->t('User ID')); ?>">
+                    <datalist id="teamtrip-share-users">
+                        <?php foreach ($_['shareUsers'] as $shareUser): ?><option value="<?php p($shareUser['userId']); ?>"><?php p($shareUser['displayName']); ?></option><?php endforeach; ?>
+                    </datalist>
+                </div>
+                <div>
+                    <label for="teamtrip-share-role"><?php p($l->t('Permission')); ?></label>
+                    <select id="teamtrip-share-role" name="shareRole"><option value="read"><?php p($roleLabels['read']); ?></option><option value="edit"><?php p($roleLabels['edit']); ?></option></select>
+                </div>
+                <button type="submit"><?php p($l->t('Add user')); ?></button>
+            </form>
         <?php endif; ?>
     </section>
 
