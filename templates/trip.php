@@ -692,31 +692,44 @@ $shareNotices = [
         <?php if ($_['shareStatus'] !== '' && isset($shareNotices[$_['shareStatus']])): ?>
             <p class="teamtrip-form-notice is-<?php p($shareNotices[$_['shareStatus']][0]); ?>" role="status"><?php p($shareNotices[$_['shareStatus']][1]); ?></p>
         <?php endif; ?>
-        <div class="teamtrip-owner-row"><span><?php p($l->t('Owner')); ?></span><strong><?php p($_['owner']); ?></strong><span class="teamtrip-badge"><?php p($roleLabels['owner']); ?></span></div>
+        <div class="teamtrip-owner-row">
+            <div class="teamtrip-share-identity">
+                <span class="teamtrip-person-avatar teamtrip-share-avatar">
+                    <span aria-hidden="true">👤</span>
+                    <span class="teamtrip-linked-badge" title="<?php p($l->t('Linked Nextcloud user')); ?>" aria-label="<?php p($l->t('Linked Nextcloud user')); ?>">✓</span>
+                </span>
+                <div><strong><?php p($_['ownerDisplayName']); ?></strong><?php if ($_['ownerDisplayName'] !== $_['owner']): ?><small>@<?php p($_['owner']); ?></small><?php endif; ?></div>
+            </div>
+            <span class="teamtrip-badge"><?php p($roleLabels['owner']); ?></span>
+        </div>
         <?php if ($_['shares'] === []): ?>
             <p class="teamtrip-muted teamtrip-share-empty"><?php p($l->t('This trip is not shared.')); ?></p>
         <?php else: ?>
             <ul class="teamtrip-entity-list teamtrip-share-list">
                 <?php foreach ($_['shares'] as $share): ?>
                     <li>
-                        <span class="teamtrip-entity-icon" aria-hidden="true">👤</span>
-                        <div><strong><?php p($share['userId']); ?></strong></div>
+                        <div class="teamtrip-share-identity">
+                            <span class="teamtrip-person-avatar teamtrip-share-avatar">
+                                <span aria-hidden="true">👤</span>
+                                <span class="teamtrip-linked-badge" title="<?php p($l->t('Linked Nextcloud user')); ?>" aria-label="<?php p($l->t('Linked Nextcloud user')); ?>">✓</span>
+                            </span>
+                            <div><strong><?php p($share['displayName']); ?></strong><?php if ($share['displayName'] !== $share['userId']): ?><small>@<?php p($share['userId']); ?></small><?php endif; ?></div>
+                        </div>
                         <?php if ($_['role'] === 'owner'): ?>
-                            <form class="teamtrip-share-role-form" action="<?php p($_['shareSaveUrl']); ?>" method="post">
-                                <input type="hidden" name="requesttoken" value="<?php p(\OCP\Util::callRegister()); ?>" data-teamtrip-requesttoken>
-                                <input type="hidden" name="shareUserId" value="<?php p($share['userId']); ?>">
-                                <label class="teamtrip-visually-hidden" for="share-role-<?php p(md5($share['userId'])); ?>"><?php p($l->t('Permission for %s', [$share['userId']])); ?></label>
-                                <select id="share-role-<?php p(md5($share['userId'])); ?>" name="shareRole">
-                                    <option value="read"<?php if ($share['role'] === 'read'): ?> selected<?php endif; ?>><?php p($roleLabels['read']); ?></option>
-                                    <option value="edit"<?php if ($share['role'] === 'edit'): ?> selected<?php endif; ?>><?php p($roleLabels['edit']); ?></option>
-                                </select>
-                                <button type="submit" class="teamtrip-small-button"><?php p($l->t('Save')); ?></button>
-                            </form>
-                            <form action="<?php p($_['shareRemoveUrl']); ?>" method="post" data-teamtrip-confirm-remove="<?php p($l->t('Remove share for %s?', [$share['userId']])); ?>">
-                                <input type="hidden" name="requesttoken" value="<?php p(\OCP\Util::callRegister()); ?>" data-teamtrip-requesttoken>
-                                <input type="hidden" name="shareUserId" value="<?php p($share['userId']); ?>">
-                                <button type="submit" class="teamtrip-small-button teamtrip-danger-button"><?php p($l->t('Remove')); ?></button>
-                            </form>
+                            <div class="teamtrip-share-actions">
+                                <form class="teamtrip-share-role-form" action="<?php p($_['shareApiUrl']); ?>" method="post" data-teamtrip-share-request="save" data-teamtrip-success-url="<?php p($_['shareSavedUrl']); ?>" data-teamtrip-error-message="<?php p($l->t('The share could not be updated. Please try again.')); ?>">
+                                    <input type="hidden" name="shareUserId" value="<?php p($share['userId']); ?>">
+                                    <label class="teamtrip-visually-hidden" for="share-role-<?php p(md5($share['userId'])); ?>"><?php p($l->t('Permission for %s', [$share['userId']])); ?></label>
+                                    <select id="share-role-<?php p(md5($share['userId'])); ?>" name="shareRole">
+                                        <option value="read"<?php if ($share['role'] === 'read'): ?> selected<?php endif; ?>><?php p($roleLabels['read']); ?></option>
+                                        <option value="edit"<?php if ($share['role'] === 'edit'): ?> selected<?php endif; ?>><?php p($roleLabels['edit']); ?></option>
+                                    </select>
+                                    <button type="submit" class="teamtrip-small-button"><?php p($l->t('Save')); ?></button>
+                                </form>
+                                <form action="<?php p($share['removeUrl']); ?>" method="post" data-teamtrip-share-request="remove" data-teamtrip-success-url="<?php p($_['shareRemovedUrl']); ?>" data-teamtrip-confirm-remove="<?php p($l->t('Remove share for %s?', [$share['userId']])); ?>" data-teamtrip-error-message="<?php p($l->t('The share could not be updated. Please try again.')); ?>">
+                                    <button type="submit" class="teamtrip-small-button teamtrip-danger-button"><?php p($l->t('Remove')); ?></button>
+                                </form>
+                            </div>
                         <?php else: ?>
                             <span class="teamtrip-badge"><?php p($roleLabels[$share['role']] ?? $share['role']); ?></span>
                         <?php endif; ?>
@@ -725,8 +738,7 @@ $shareNotices = [
             </ul>
         <?php endif; ?>
         <?php if ($_['role'] === 'owner'): ?>
-            <form class="teamtrip-add-share-form" action="<?php p($_['shareSaveUrl']); ?>" method="post">
-                <input type="hidden" name="requesttoken" value="<?php p(\OCP\Util::callRegister()); ?>" data-teamtrip-requesttoken>
+            <form class="teamtrip-add-share-form" action="<?php p($_['shareApiUrl']); ?>" method="post" data-teamtrip-share-request="save" data-teamtrip-success-url="<?php p($_['shareSavedUrl']); ?>" data-teamtrip-error-message="<?php p($l->t('The share could not be updated. Please try again.')); ?>">
                 <div>
                     <label for="teamtrip-share-user"><?php p($l->t('Nextcloud user')); ?></label>
                     <input id="teamtrip-share-user" name="shareUserId" type="text" list="teamtrip-share-users" required autocomplete="off" placeholder="<?php p($l->t('User ID')); ?>">

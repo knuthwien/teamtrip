@@ -18,6 +18,7 @@
 - Group activities by local travel day and show time ranges, durations, time zones, notes, locations and costs responsively.
 - Add trip status, currency-safe totals, category and traveler cost breakdowns, plus notices for incomplete cost assignments.
 - Let trip owners add, update and remove Nextcloud shares through CSRF-protected web forms without changing trip snapshots.
+- Align verified Nextcloud identities and share actions in compact rows, widen user search and use the established OCS sharing routes to avoid stale web-route caches.
 - Preserve all existing OCS routes, snapshot semantics, permissions and persistence behavior.
 
 ## 0.1.8

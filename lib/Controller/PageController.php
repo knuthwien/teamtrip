@@ -9,7 +9,6 @@ use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\NotFoundResponse;
-use OCP\AppFramework\Http\RedirectResponse;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\IRequest;
 use OCP\IURLGenerator;
@@ -33,6 +32,7 @@ class PageController extends Controller {
     #[NoCSRFRequired]
     public function index(): TemplateResponse {
         Util::addStyle('teamtrip', 'teamtrip-0200-r5');
+        Util::addStyle('teamtrip', 'teamtrip-0200-r6');
 
         $uid = $this->userSession->getUser()?->getUID() ?? '';
         $scopeParam = $this->request->getParam('scope', 'all');
@@ -123,7 +123,8 @@ class PageController extends Controller {
     #[NoCSRFRequired]
     public function trip(string $uuid): TemplateResponse|NotFoundResponse {
         Util::addStyle('teamtrip', 'teamtrip-0200-r5');
-        Util::addScript('teamtrip', 'teamtrip-0200');
+        Util::addStyle('teamtrip', 'teamtrip-0200-r6');
+        Util::addScript('teamtrip', 'teamtrip-0200-r6');
         $uid = $this->userSession->getUser()?->getUID() ?? '';
         $role = $this->repository->roleFor($uuid, $uid);
         $row = $this->repository->find($uuid);
@@ -143,7 +144,20 @@ class PageController extends Controller {
             return $ad <=> $bd ?: ((int)($a['order'] ?? 0) <=> (int)($b['order'] ?? 0));
         });
 
-        $shares = $this->repository->listShares($uuid);
+        $tripUrl = $this->urlGenerator->linkToRoute('teamtrip.page.trip', ['uuid' => $uuid]);
+        $shareSavedUrl = $tripUrl . '?' . http_build_query(['shareStatus' => 'saved']) . '#shares';
+        $shareRemovedUrl = $tripUrl . '?' . http_build_query(['shareStatus' => 'removed']) . '#shares';
+        $shareApiUrl = $this->urlGenerator->linkToOCSRouteAbsolute('teamtrip.api.addShare', ['uuid' => $uuid]);
+        $shares = array_map(function (array $share) use ($uuid): array {
+            $userId = (string)$share['userId'];
+            $user = $this->userManager->get($userId);
+            $share['displayName'] = $user?->getDisplayName() ?: $userId;
+            $share['removeUrl'] = $this->urlGenerator->linkToOCSRouteAbsolute('teamtrip.api.removeShare', [
+                'uuid' => $uuid,
+                'userId' => $userId,
+            ]);
+            return $share;
+        }, $this->repository->listShares($uuid));
         $shareUsers = [];
         if ($role === 'owner') {
             $sharedUserIds = array_fill_keys(array_column($shares, 'userId'), true);
@@ -170,6 +184,7 @@ class PageController extends Controller {
             'uuid' => $uuid,
             'title' => (string)$row['title'],
             'owner' => (string)$row['owner_uid'],
+            'ownerDisplayName' => $this->userManager->get((string)$row['owner_uid'])?->getDisplayName() ?: (string)$row['owner_uid'],
             'role' => $role,
             'revision' => (int)$row['revision'],
             'updatedAt' => (int)$row['updated_at'],
@@ -178,53 +193,10 @@ class PageController extends Controller {
             'shares' => $shares,
             'shareUsers' => $shareUsers,
             'shareStatus' => $shareStatus,
-            'shareSaveUrl' => $this->urlGenerator->linkToRoute('teamtrip.page.upsertShare', ['uuid' => $uuid]),
-            'shareRemoveUrl' => $this->urlGenerator->linkToRoute('teamtrip.page.removeShare', ['uuid' => $uuid]),
+            'shareApiUrl' => $shareApiUrl,
+            'shareSavedUrl' => $shareSavedUrl,
+            'shareRemovedUrl' => $shareRemovedUrl,
             'backUrl' => $this->urlGenerator->linkToRoute('teamtrip.page.index'),
         ]);
-    }
-
-    #[NoAdminRequired]
-    public function upsertShare(string $uuid): RedirectResponse|NotFoundResponse {
-        $uid = $this->userSession->getUser()?->getUID() ?? '';
-        if ($this->repository->roleFor($uuid, $uid) !== 'owner') {
-            return new NotFoundResponse();
-        }
-
-        $userParam = $this->request->getParam('shareUserId', '');
-        $roleParam = $this->request->getParam('shareRole', 'read');
-        $userId = is_scalar($userParam) ? trim((string)$userParam) : '';
-        $role = is_scalar($roleParam) ? strtolower(trim((string)$roleParam)) : '';
-        if ($userId === '' || $userId === $uid || !$this->userManager->userExists($userId)) {
-            return $this->shareRedirect($uuid, 'invalid-user');
-        }
-        if (!in_array($role, ['read', 'edit'], true)) {
-            return $this->shareRedirect($uuid, 'invalid-role');
-        }
-
-        $this->repository->upsertShare($uuid, $userId, $role);
-        return $this->shareRedirect($uuid, 'saved');
-    }
-
-    #[NoAdminRequired]
-    public function removeShare(string $uuid): RedirectResponse|NotFoundResponse {
-        $uid = $this->userSession->getUser()?->getUID() ?? '';
-        if ($this->repository->roleFor($uuid, $uid) !== 'owner') {
-            return new NotFoundResponse();
-        }
-
-        $userParam = $this->request->getParam('shareUserId', '');
-        $userId = is_scalar($userParam) ? trim((string)$userParam) : '';
-        if ($userId === '' || $userId === $uid) {
-            return $this->shareRedirect($uuid, 'invalid-user');
-        }
-
-        $this->repository->removeShare($uuid, $userId);
-        return $this->shareRedirect($uuid, 'removed');
-    }
-
-    private function shareRedirect(string $uuid, string $status): RedirectResponse {
-        $url = $this->urlGenerator->linkToRoute('teamtrip.page.trip', ['uuid' => $uuid]);
-        return new RedirectResponse($url . '?' . http_build_query(['shareStatus' => $status]) . '#shares');
     }
 }

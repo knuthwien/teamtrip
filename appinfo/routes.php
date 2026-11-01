@@ -6,8 +6,6 @@ return [
     'routes' => [
         ['name' => 'page#index', 'url' => '/', 'verb' => 'GET'],
         ['name' => 'page#trip', 'url' => '/trip/{uuid}', 'verb' => 'GET'],
-        ['name' => 'page#upsertShare', 'url' => '/trip/{uuid}/shares', 'verb' => 'POST'],
-        ['name' => 'page#removeShare', 'url' => '/trip/{uuid}/shares/remove', 'verb' => 'POST'],
     ],
     'ocs' => [
         ['name' => 'api#ping', 'url' => '/api/v1/ping', 'verb' => 'GET'],
