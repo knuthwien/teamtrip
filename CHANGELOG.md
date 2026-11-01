@@ -1,5 +1,26 @@
 # Changelog
 
+## 0.2.0
+
+- Document and freeze the TeamTrip 0.1.8 iOS synchronization contract for GUI-only development.
+- Redesign the trip overview with upcoming and past trip sections.
+- Add trip-title search and filters for all, owned and shared trips.
+- Show activity and revision counts in responsive, accessible trip cards.
+- Replace technical activity type names with localized labels and recognizable icons.
+- Remove activity UUIDs from the main table and prevent long values from creating oversized rows.
+- Present activities as compact cards on narrow screens instead of a horizontally scrolling table.
+- Add a read-only, iOS-inspired trip detail view with section navigation and a cost overview.
+- Surface travelers, categories, payment modes, currencies, budgets and shares without exposing technical identifiers.
+- Compact travelers, categories and payment modes into icon chips, aggregate meaningful budgets by currency and strengthen page-heading and anchor navigation contrast.
+- Bust stale Nextcloud stylesheet caches and refine the trip detail with linked-user avatar badges, compact category/payment tiles and stronger location hierarchy.
+- Recognize the trip owner's localized “Me” traveler as a linked Nextcloud account and keep category labels on one line.
+- Prevent awkward category-name breaks and render real currency symbols instead of the generic currency placeholder.
+- Group activities by local travel day and show time ranges, durations, time zones, notes, locations and costs responsively.
+- Add trip status, currency-safe totals, category and traveler cost breakdowns, plus notices for incomplete cost assignments.
+- Let trip owners add, update and remove Nextcloud shares through CSRF-protected web forms without changing trip snapshots.
+- Align verified Nextcloud identities and share actions in compact rows, widen user search and use the established OCS sharing routes to avoid stale web-route caches.
+- Preserve all existing OCS routes, snapshot semantics, permissions and persistence behavior.
+
 ## 0.1.8
 
 - Fix scrolling by using Nextcloud's outer content viewport as the scroll container.
